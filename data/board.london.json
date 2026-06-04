@@ -1,6 +1,12 @@
 {
   "edition": "london",
   "_note": "Re-skin of the standard UK Monopoly board: prices and rents are the canonical UK values x10000. Rent arrays are [site, 1house, 2house, 3house, 4house, hotel]. Source: standard UK Monopoly title-deed cards.",
+  "rentRules": {
+    "stationRentByCount": [250000, 500000, 1000000, 2000000],
+    "utilityPerPipOne": 40000,
+    "utilityPerPipBoth": 100000,
+    "monopolyUndevelopedMultiplier": 2
+  },
   "squares": [
     {"position":0,"name":"GO","type":"GO","group":"NONE","price":0,"houseCost":0,"mortgage":0},
     {"position":1,"name":"PORTOBELLO ROAD MARKET","type":"STREET","group":"BROWN","price":600000,"houseCost":500000,"mortgage":300000,"rent":[20000,100000,300000,900000,1600000,2500000]},

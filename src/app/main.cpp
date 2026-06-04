@@ -1,6 +1,10 @@
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include "domain/board_factory.h"
@@ -14,6 +18,28 @@ using namespace monopoly;
 
 namespace {
 
+// Data directory: argv[1] > $MONOPOLY_DATA_DIR > compile-time default.
+std::string resolveDataDir(int argc, char** argv) {
+  if (argc > 1) return argv[1];
+  if (const char* env = std::getenv("MONOPOLY_DATA_DIR")) return env;
+#ifdef MONOPOLY_DATA_DIR
+  return MONOPOLY_DATA_DIR;
+#else
+  return "data";
+#endif
+}
+
+// Format a money amount in K/M units, e.g. £1.61M, £250.0K, £48.
+std::string money(double v) {
+  std::ostringstream os;
+  const double a = std::fabs(v);
+  os << "\xC2\xA3";
+  if (a >= 1e6) os << std::fixed << std::setprecision(2) << v / 1e6 << "M";
+  else if (a >= 1e3) os << std::fixed << std::setprecision(1) << v / 1e3 << "K";
+  else os << std::fixed << std::setprecision(0) << v;
+  return os.str();
+}
+
 std::vector<int> rankByProbability(const probability::PositionVector& v) {
   std::vector<int> order(probability::kNumPositions);
   for (int i = 0; i < probability::kNumPositions; ++i) order[i] = i;
@@ -23,19 +49,19 @@ std::vector<int> rankByProbability(const probability::PositionVector& v) {
 
 void printRow(const domain::Board& board, int pos, double prob) {
   std::cout << "  " << std::setw(2) << pos << "  " << std::setw(24) << std::left
-            << board.at(pos).name << std::right << std::setw(7) << prob * 100
-            << "%\n";
+            << board.at(pos).name << std::right << std::setw(7) << std::fixed
+            << std::setprecision(3) << prob * 100 << "%\n";
 }
 
 }  // namespace
 
-int main() {
-  auto board = domain::loadBoardFromFile(BOARD_JSON_PATH);
-  auto decks = domain::loadDecksFromFile(DECKS_JSON_PATH);
+int run(int argc, char** argv) {
+  const std::string dataDir = resolveDataDir(argc, argv);
+  auto board = domain::loadBoardFromFile(dataDir + "/board.london.json");
+  auto decks = domain::loadDecksFromFile(dataDir + "/decks.london.json");
   probability::ProbabilityEngine eng(board, decks);
   probability::LandingResolver resolver(board, decks);
 
-  std::cout << std::fixed << std::setprecision(3);
   std::cout << "Monopoly Markov Advisor — London edition\n";
   std::cout << "=========================================\n\n";
 
@@ -43,7 +69,8 @@ int main() {
   double jail = eng.jailProbability();
   std::cout << "Long-run landing probability (top 10 squares):\n";
   std::cout << "  --  " << std::setw(24) << std::left << "JAIL (in jail)"
-            << std::right << std::setw(7) << jail * 100 << "%\n";
+            << std::right << std::setw(7) << std::fixed << std::setprecision(3)
+            << jail * 100 << "%\n";
   auto order = rankByProbability(stat);
   for (int k = 0; k < 10; ++k) printRow(board, order[k], stat[order[k]]);
 
@@ -61,19 +88,29 @@ int main() {
   gs.setOwner(21, bob);
   gs.setOwner(23, bob);
   gs.setHouses(24, 5);                        // ...with a hotel on Trafalgar Square
+  gs.player(bob).position = 24;               // BOB also standing on it (muggable)
 
   pricing::PricingConfig cfg;
   cfg.muggingEnabled = true;
-  gs.player(bob).position = 24;               // BOB also standing on it (muggable)
   auto quote = pricing::priceNextRoll(gs, alice, resolver, cfg);
 
   std::cout << "\nInsurance quote — ALICE about to roll from "
             << board.at(18).name << " (18):\n";
-  std::cout << "  expected next-roll rent liability : \xC2\xA3" << std::setprecision(0)
-            << quote.expectedRent << "\n";
-  std::cout << "  mugging expected value (benefit)  : \xC2\xA3" << quote.muggingExposure
+  std::cout << "  expected next-roll rent liability : " << money(quote.expectedRent)
             << "\n";
-  std::cout << "  fair premium to insure this roll  : \xC2\xA3" << quote.fairPremium
+  std::cout << "  mugging expected value (benefit)  : " << money(quote.muggingExposure)
+            << "\n";
+  std::cout << "  fair premium to insure this roll  : " << money(quote.fairPremium)
             << "\n";
   return 0;
+}
+
+int main(int argc, char** argv) {
+  try {
+    return run(argc, argv);
+  } catch (const std::exception& e) {
+    std::cerr << "error: " << e.what() << "\n"
+              << "usage: monopoly [DATA_DIR]   (or set MONOPOLY_DATA_DIR)\n";
+    return 1;
+  }
 }

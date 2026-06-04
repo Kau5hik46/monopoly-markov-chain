@@ -8,6 +8,16 @@ namespace monopoly::domain {
 
 inline constexpr int kBoardSize = 40;
 
+// Rent rules that are not per-property data (stations/utilities/monopoly bonus).
+// Defaults are the canonical UK Monopoly values (x10000 board scale) and may be
+// overridden from the board config file.
+struct RentRules {
+  std::array<long, 4> stationRentByCount{250000, 500000, 1000000, 2000000};
+  long utilityPerPipOne = 40000;    // 4x dice  (x10000)
+  long utilityPerPipBoth = 100000;  // 10x dice (x10000)
+  long monopolyUndevelopedMultiplier = 2;
+};
+
 class Board {
  public:
   explicit Board(std::array<Square, kBoardSize> squares)
@@ -15,6 +25,9 @@ class Board {
 
   const Square& at(int position) const { return squares_[position % kBoardSize]; }
   const std::array<Square, kBoardSize>& squares() const { return squares_; }
+
+  const RentRules& rentRules() const { return rentRules_; }
+  void setRentRules(const RentRules& r) { rentRules_ = r; }
 
   // Positions whose type matches t.
   std::vector<int> positionsOfType(SquareType t) const;
@@ -25,6 +38,7 @@ class Board {
 
  private:
   std::array<Square, kBoardSize> squares_;
+  RentRules rentRules_;
 };
 
 }  // namespace monopoly::domain

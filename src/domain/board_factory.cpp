@@ -35,7 +35,28 @@ Board loadBoardFromFile(const std::string& path) {
       throw std::runtime_error("square position out of range");
     squares[static_cast<std::size_t>(s.position)] = s;
   }
-  return Board(std::move(squares));
+
+  Board board(std::move(squares));
+
+  // Optional rent rules (stations/utilities/monopoly bonus); defaults if absent.
+  if (j.contains("rentRules")) {
+    const auto& jr = j.at("rentRules");
+    RentRules rr = board.rentRules();
+    if (jr.contains("stationRentByCount")) {
+      const auto& a = jr.at("stationRentByCount");
+      for (std::size_t k = 0; k < 4 && k < a.size(); ++k)
+        rr.stationRentByCount[k] = a[k].get<long>();
+    }
+    if (jr.contains("utilityPerPipOne"))
+      rr.utilityPerPipOne = jr.at("utilityPerPipOne").get<long>();
+    if (jr.contains("utilityPerPipBoth"))
+      rr.utilityPerPipBoth = jr.at("utilityPerPipBoth").get<long>();
+    if (jr.contains("monopolyUndevelopedMultiplier"))
+      rr.monopolyUndevelopedMultiplier =
+          jr.at("monopolyUndevelopedMultiplier").get<long>();
+    board.setRentRules(rr);
+  }
+  return board;
 }
 
 }  // namespace monopoly::domain
