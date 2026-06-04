@@ -197,6 +197,11 @@ Command parseLine(const std::string& line, const NameTable& names) {
     }
     if (sub == "stationary") { c.query = QueryKind::Stationary; return c; }
     if (sub == "board") { c.query = QueryKind::Board; return c; }
+    if (sub == "chain") {
+      c.query = QueryKind::Chain;
+      if (!needPlayer(c.player)) return invalid("query chain expects a player");
+      return c;
+    }
     if (sub == "value") { c.query = QueryKind::Value; if (!needSquare(c.posA)) return invalid("query value expects @square"); return c; }
     if (sub == "state") { c.query = QueryKind::State; return c; }
     return invalid("unknown query: " + sub);

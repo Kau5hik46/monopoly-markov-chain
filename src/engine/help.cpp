@@ -48,6 +48,7 @@ std::string manPage(const Palette& pal) {
     << "    query state                 player panel: positions, cash, holdings\n"
     << "    query board                 full 40-square board: owners, development, tokens\n"
     << "    query risk|options Pi       risk profile + fair insurance premium for Pi\n"
+    << "    query chain Pi              option chain: fair premium across deductibles\n"
     << "    query dist Pi ^n            landing distribution n rolls ahead\n"
     << "    query stationary            long-run landing probabilities\n"
     << "    query value @SQ             long-run landing probability for one square\n\n";

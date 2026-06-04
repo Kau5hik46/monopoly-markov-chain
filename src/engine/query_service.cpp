@@ -6,6 +6,7 @@
 #include "engine/amount.h"
 #include "engine/formatter.h"
 #include "pricing/insurance_pricer.h"
+#include "pricing/option_chain.h"
 
 namespace monopoly::engine {
 
@@ -131,6 +132,29 @@ CommandResult QueryService::handle(const Command& c) const {
     case QueryKind::Options: {
       if (c.player < 0 || c.player >= gs_.numPlayers()) { r.fail("unknown player"); return r; }
       r.add(EffectKind::Query, advisory(c.player));
+      return r;
+    }
+    case QueryKind::Chain: {
+      if (c.player < 0 || c.player >= gs_.numPlayers()) { r.fail("unknown player"); return r; }
+      auto chain = pricing::buildOptionChain(gs_, c.player, resolver_);
+      os << sectionHeader("OPTION CHAIN  P" + std::to_string(c.player + 1) +
+                              " next-roll rent insurance",
+                          "E[L] " + formatMoney(chain.expectedLoss), pal_) << "\n";
+      if (chain.maxLoss <= 0.0) {
+        os << "  " << pal_.dim("no rent liability reachable next roll") << "\n";
+        r.add(EffectKind::Query, os.str());
+        return r;
+      }
+      os << " " << padRight("STRIKE (deductible)", 22) << padLeft("P(loss>K)", 11)
+         << "   FAIR PREMIUM\n";
+      for (const auto& row : chain.rows) {
+        std::ostringstream pct; pct << (row.payoutProb * 100);
+        os << " " << padRight(formatMoney(row.strike), 22)
+           << padLeft(pct.str().substr(0, 5) + "%", 11) << "   "
+           << pal_.cyan(formatMoney(row.fairPremium)) << "\n";
+      }
+      os << " " << pal_.dim("premium = E[max(loss - K, 0)] over the next roll");
+      r.add(EffectKind::Query, os.str());
       return r;
     }
     case QueryKind::Value: {
