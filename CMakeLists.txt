@@ -30,6 +30,7 @@ add_library(monopoly_core
   src/probability/landing.cpp
   src/probability/transition_matrix.cpp
   src/probability/probability_engine.cpp
+  src/probability/monte_carlo.cpp
   src/risk/rent_table.cpp
   src/pricing/insurance_pricer.cpp
   src/rules/rule_config.cpp
@@ -82,6 +83,7 @@ add_executable(monopoly_tests
   tests/unit/test_engine_parse.cpp
   tests/unit/test_engine_exec.cpp
   tests/unit/test_engine_repl.cpp
+  tests/unit/test_monte_carlo.cpp
 )
 target_link_libraries(monopoly_tests PRIVATE monopoly_core GTest::gtest_main)
 target_compile_definitions(monopoly_tests PRIVATE
