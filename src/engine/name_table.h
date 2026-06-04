@@ -2,6 +2,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "domain/board.h"
 
 namespace monopoly::engine {
@@ -14,6 +15,9 @@ class NameTable {
 
   // Accepts "#24", "24", or "TRAFALGAR_SQUARE". Returns nullopt if unknown.
   std::optional<int> resolve(const std::string& ref) const;
+
+  // Normalized square names starting with `prefix` (sorted), for @-autocomplete.
+  std::vector<std::string> completions(const std::string& prefix) const;
 
   static std::string normalize(const std::string& name);
 

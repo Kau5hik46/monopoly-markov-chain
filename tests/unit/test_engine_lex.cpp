@@ -30,3 +30,16 @@ TEST(NameTable, ResolvesNameAndPosition) {
   EXPECT_FALSE(nt.resolve("NOWHERE").has_value());
   EXPECT_FALSE(nt.resolve("#99").has_value());
 }
+
+TEST(NameTable, CompletesPrefixes) {
+  auto board = monopoly::domain::loadBoardFromFile(BOARD_JSON_PATH);
+  NameTable nt(board);
+  auto wem = nt.completions("WEM");  // WEMBLEY ARENA, WEMBLEY STADIUM
+  ASSERT_EQ(wem.size(), 2u);
+  EXPECT_EQ(wem[0], "WEMBLEY_ARENA");
+  EXPECT_EQ(wem[1], "WEMBLEY_STADIUM");
+  auto traf = nt.completions("traf");  // case-insensitive
+  ASSERT_EQ(traf.size(), 1u);
+  EXPECT_EQ(traf[0], "TRAFALGAR_SQUARE");
+  EXPECT_TRUE(nt.completions("ZZZ").empty());
+}

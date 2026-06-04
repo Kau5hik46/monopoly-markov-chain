@@ -1,5 +1,6 @@
 #include "engine/name_table.h"
 
+#include <algorithm>
 #include <cctype>
 
 namespace monopoly::engine {
@@ -40,6 +41,16 @@ std::optional<int> NameTable::resolve(const std::string& ref) const {
   auto it = byName_.find(normalize(ref));
   if (it != byName_.end()) return it->second;
   return std::nullopt;
+}
+
+std::vector<std::string> NameTable::completions(const std::string& prefix) const {
+  const std::string p = normalize(prefix);
+  std::vector<std::string> out;
+  for (const auto& kv : byName_)
+    if (kv.first.rfind(p, 0) == 0) out.push_back(kv.first);
+  std::sort(out.begin(), out.end());
+  out.erase(std::unique(out.begin(), out.end()), out.end());
+  return out;
 }
 
 }  // namespace monopoly::engine

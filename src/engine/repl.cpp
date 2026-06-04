@@ -2,6 +2,7 @@
 
 #include <string>
 #include "engine/formatter.h"
+#include "engine/line_reader.h"
 #include "engine/parser.h"
 
 namespace monopoly::engine {
@@ -61,9 +62,15 @@ void Repl::run(std::istream& in) {
   out_ << "Monopoly Markov Advisor — London edition.  Type 'help' or 'quit'.\n\n";
   std::string line;
   while (true) {
-    out_ << "monopoly> ";
-    out_.flush();
-    if (!std::getline(in, line)) break;
+    bool got;
+    if (pal_.on) {  // interactive TTY: raw-mode reader with @-autocomplete
+      got = readInteractiveLine(names_, "monopoly> ", line, out_);
+    } else {
+      out_ << "monopoly> ";
+      out_.flush();
+      got = static_cast<bool>(std::getline(in, line));
+    }
+    if (!got) break;
     Command cmd = parseLine(line, names_);
     if (cmd.kind == CommandKind::None) continue;
     if (cmd.kind == CommandKind::Quit) {

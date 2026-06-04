@@ -38,6 +38,7 @@ add_library(monopoly_core
   src/rules/rule_config.cpp
   src/rules/rule_logic.cpp
   src/engine/name_table.cpp
+  src/engine/line_reader.cpp
   src/engine/lexer.cpp
   src/engine/parser.cpp
   src/engine/help.cpp
