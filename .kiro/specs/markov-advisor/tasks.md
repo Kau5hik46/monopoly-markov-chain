@@ -33,9 +33,11 @@ Each milestone builds and tests independently (`ctest` green) before the next st
 | **M6** | **Engine, DSL & REPL** | ✅ done | `Lexer`, `Parser` (Interpreter), `Command`, `Effect`/`CommandResult`, `Executor` (+undo Memento), `QueryService`, `Formatter`, `Repl` (+ start-of-game rules wizard), `main` | `plans/milestone-6-engine.md` | M2.5–M5 |
 | **M7** | **Monte-Carlo backend & validation** | ✅ done | `MonteCarloEngine` (`IDistributionProvider`, seeded), validation-oracle test: MC stationary matches analytic π (total variation < 0.02) | `plans/milestone-7-montecarlo.md` | M3–M6 |
 
-**All milestones complete.** 62 tests green. Remaining designed-for extensions (not in
-v1): option strike-chain (req C), N-roll/ruin insurance (req B/D), multi-player
-rule-coupled Monte-Carlo, `card`/`trade` DSL verbs, monopoly-aware free-parking placement.
+| **M8** | **Option chain (req C)** | ✅ done | `pricing::option_chain` — loss distribution + strike ladder `E[max(L-K,0)]`, `query chain Pi` | `plans/milestone-8-option-chain.md` | M4 |
+
+**Core + req C complete.** 66 tests green. Remaining designed-for extensions:
+N-roll/ruin insurance (req B/D), multi-player rule-coupled Monte-Carlo, `card`/`trade`
+DSL verbs, monopoly-aware free-parking placement.
 
 ## Cross-cutting acceptance gates (every milestone)
 - `cmake --build build && ctest --test-dir build` is green.
