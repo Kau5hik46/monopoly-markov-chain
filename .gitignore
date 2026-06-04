@@ -1,1 +1,12 @@
+# Build output
 /build/
+
+# Compiled objects / binaries
+*.o
+*.a
+/main
+
+# OS / editor cruft
+.DS_Store
+.idea/
+.vscode/
