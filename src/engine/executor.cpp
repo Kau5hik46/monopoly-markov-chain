@@ -308,13 +308,17 @@ CommandResult Executor::execute(const Command& c) {
       if (!validPlayer(c.player, r)) break;
       int pot = gs_.freeParkingPot();
       if (pot <= 0) { r.add(EffectKind::Info, "free-parking pot is empty"); break; }
-      long cash = static_cast<long>(pot) * kFreeParkingHouseCash;
-      gs_.player(c.player).cash += cash;
-      gs_.bank().housesAvailable += pot;  // return to supply (no monopoly placement yet)
-      gs_.setFreeParkingPot(0);
-      r.add(EffectKind::PotClaimed, "P" + std::to_string(c.player + 1) + " claims " +
-                                        std::to_string(pot) + " houses as " +
-                                        formatMoney(static_cast<double>(cash)));
+      auto cr = rules::claimFreeParkingPot(gs_, c.player);
+      std::string msg = "P" + std::to_string(c.player + 1) + " claims " +
+                        std::to_string(pot) + " houses: placed " +
+                        std::to_string(cr.placed) + " on monopolies";
+      if (cr.cashed > 0) {
+        long cash = static_cast<long>(cr.cashed) * kFreeParkingHouseCash;
+        gs_.player(c.player).cash += cash;
+        msg += ", " + std::to_string(cr.cashed) + " -> cash " +
+               formatMoney(static_cast<double>(cash));
+      }
+      r.add(EffectKind::PotClaimed, msg);
       break;
     }
     case CommandKind::Cash: {

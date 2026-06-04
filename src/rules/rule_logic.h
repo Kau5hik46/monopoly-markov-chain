@@ -25,4 +25,14 @@ inline bool isMuggingEligible(domain::SquareType t) {
 bool canTravelBetweenAirports(const domain::GameState& gs, int player, int from,
                               int to);
 
+struct ClaimResult {
+  int placed = 0;   // houses placed onto the claimer's monopoly streets
+  int cashed = 0;   // unplaceable houses, converted to cash & returned to the bank
+};
+
+// Claims the free-parking house pot for `player`: places houses (even-building) onto
+// streets in fully-owned, unmortgaged groups; leftover houses return to the bank and
+// become cash. Mutates `gs` (houses, bank supply, pot). Returns the split.
+ClaimResult claimFreeParkingPot(domain::GameState& gs, int player);
+
 }  // namespace monopoly::rules
