@@ -26,9 +26,12 @@ add_library(monopoly_core
   src/domain/board.cpp
   src/domain/board_factory.cpp
   src/domain/deck_factory.cpp
+  src/domain/game_state.cpp
   src/probability/landing.cpp
   src/probability/transition_matrix.cpp
   src/probability/probability_engine.cpp
+  src/risk/rent_table.cpp
+  src/pricing/insurance_pricer.cpp
 )
 target_include_directories(monopoly_core PUBLIC ${CMAKE_SOURCE_DIR}/src)
 target_compile_features(monopoly_core PUBLIC cxx_std_17)
@@ -62,6 +65,9 @@ add_executable(monopoly_tests
   tests/unit/test_landing.cpp
   tests/unit/test_transition.cpp
   tests/unit/test_probability_engine.cpp
+  tests/unit/test_game_state.cpp
+  tests/unit/test_rent.cpp
+  tests/unit/test_pricing.cpp
 )
 target_link_libraries(monopoly_tests PRIVATE monopoly_core GTest::gtest_main)
 target_compile_definitions(monopoly_tests PRIVATE
