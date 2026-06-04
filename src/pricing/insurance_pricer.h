@@ -13,6 +13,8 @@ struct RollQuote {
   double expectedRent = 0.0;      // fair premium to insure next-roll rent liability
   double muggingExposure = 0.0;   // signed EV from mugging (positive = expected gain)
   double fairPremium = 0.0;       // expectedRent net of mugging benefit (>=0, floored)
+  double maxRent = 0.0;           // worst-case single-roll rent over reachable squares
+  int maxRentSquare = -1;         // which square produces maxRent (-1 if none)
 };
 
 // Prices the next single roll for `mover` from their current position, using the

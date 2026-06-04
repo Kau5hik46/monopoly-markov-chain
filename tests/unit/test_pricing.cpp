@@ -35,6 +35,9 @@ TEST(Pricing, PremiumRisesWithDevelopedOpponentProperty) {
   gs.setHouses(24, 5);                      // hotel
   auto qHotel = pricing::priceNextRoll(gs, mover, resolver, pricing::PricingConfig{});
   EXPECT_GT(qHotel.expectedRent, qNoHouse.expectedRent);
+  // Worst-case single-roll risk is the Trafalgar Square hotel rent.
+  EXPECT_EQ(qHotel.maxRentSquare, 24);
+  EXPECT_DOUBLE_EQ(qHotel.maxRent, 11000000.0);
 }
 
 TEST(Pricing, MuggingBenefitReducesPremium) {

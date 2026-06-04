@@ -34,6 +34,10 @@ std::string QueryService::advisory(int mover) const {
   os << "advisory — P" << (mover + 1) << " (" << gs_.player(mover).name
      << ") next roll:\n"
      << "    expected rent liability : " << formatMoney(q.expectedRent) << "\n"
+     << "    max single-roll risk    : " << formatMoney(q.maxRent);
+  if (q.maxRentSquare >= 0)
+    os << " (" << gs_.board().at(q.maxRentSquare).name << ")";
+  os << "\n"
      << "    mugging EV (benefit)    : " << formatMoney(q.muggingExposure) << "\n"
      << "    fair insurance premium  : " << formatMoney(q.fairPremium) << "\n";
   return os.str();

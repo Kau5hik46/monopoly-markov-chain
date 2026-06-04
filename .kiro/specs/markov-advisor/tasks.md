@@ -29,9 +29,9 @@ Each milestone builds and tests independently (`ctest` green) before the next st
 | **M3** | **Analytic probability engine** | ✅ done | `TransitionMatrix` (123 micro-states + card branching + 3-doubles→jail), stationary + single-roll + N-roll transient, `IDistributionProvider`, `ProbabilityEngine` facade; runnable demo in `main` | `plans/milestone-3-probability.md` | M1, M2 |
 | **M2.5** | **Live-state entities** | ✅ done | `PlayerState`, `BankState`, `GameState` (ownership/cash/houses/jail/pot + monopoly/occupancy queries) | `plans/milestone-2_5-game-state.md` | M2 |
 | **M4** | **Risk & pricing** | ✅ done | real UK rents (×10⁴) in board data, `RentTable`, `InsurancePricer` (single-roll liability + closed-form mugging EV — requirement A) | `plans/milestone-4-risk-pricing.md` | M2.5, M3 |
-| **M5** | **Rules subsystem** | ⬜ todo | `RuleConfig` (+Builder), CoR `RuleEngine`, handlers (Mugging, AirportTravel, FreeParkingPot), `JailPolicy`, `Specification`s | `plans/milestone-5-rules.md` | M2.5 |
-| **M6** | **Engine, DSL & REPL** | ⬜ todo | `Lexer`, `Parser` (Interpreter), `Command`+`Memento`, `Effect`/`CommandResult`, `CommandExecutor`, `ReadoutFormatter`, `Repl`, `Session`, `AdvisorEngine`, `main` | `plans/milestone-6-engine.md` | M2.5–M5 |
-| **M7** | **Monte-Carlo backend & validation** | ⬜ todo | `MonteCarloEngine` (Prototype/Flyweight/Object-Pool), backend selector, validation-oracle tests (analytic π vs MC, rules off), golden-replay sessions per house rule | `plans/milestone-7-montecarlo.md` | M3–M6 |
+| **M5** | **Rules subsystem** | ✅ done | `RuleConfig` (+Builder, JSON loader), pure rule logic (mugging contest, free-parking pot, specifications) | `plans/milestone-5-rules.md` | M2.5 |
+| **M6** | **Engine, DSL & REPL** | ✅ done | `Lexer`, `Parser` (Interpreter), `Command`, `Effect`/`CommandResult`, `Executor` (+undo Memento), `QueryService`, `Formatter`, `Repl` (+ start-of-game rules wizard), `main` | `plans/milestone-6-engine.md` | M2.5–M5 |
+| **M7** | **Monte-Carlo backend & validation** | ⬜ next | `MonteCarloEngine` (`IDistributionProvider`), validation-oracle test (analytic π vs MC, rules off) | `plans/milestone-7-montecarlo.md` | M3–M6 |
 
 ## Cross-cutting acceptance gates (every milestone)
 - `cmake --build build && ctest --test-dir build` is green.

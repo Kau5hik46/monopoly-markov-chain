@@ -24,8 +24,12 @@ RollQuote priceNextRoll(const domain::GameState& gs, int mover,
       for (const auto& lp : resolver.resolve(raw)) {
         if (lp.position == probability::kJailSentinel) continue;  // no rent in jail
         const double w = (1.0 / 36.0) * lp.prob;
-        q.expectedRent +=
-            w * static_cast<double>(risk::rentOwed(gs, lp.position, mover, sum));
+        const long rent = risk::rentOwed(gs, lp.position, mover, sum);
+        q.expectedRent += w * static_cast<double>(rent);
+        if (static_cast<double>(rent) > q.maxRent) {
+          q.maxRent = static_cast<double>(rent);
+          q.maxRentSquare = lp.position;
+        }
         if (cfg.muggingEnabled) {
           const int occ = gs.occupantAt(lp.position, /*exclude=*/mover);
           const auto& sq = gs.board().at(lp.position);
