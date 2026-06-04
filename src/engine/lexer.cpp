@@ -7,7 +7,7 @@ namespace monopoly::engine {
 namespace {
 bool isWordChar(char c) {
   return std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '.' ||
-         c == '#';
+         c == '#' || c == '/';  // '/' so file paths tokenize as one word
 }
 bool starts(const std::string& s, std::size_t i, const char* op) {
   for (std::size_t k = 0; op[k]; ++k)

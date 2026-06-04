@@ -6,7 +6,8 @@ namespace monopoly::engine {
 
 enum class CommandKind {
   None, Init, Roll, Buy, Sell, Rent, Build, Mortgage, Unmortgage, Tax, Jail, Mug,
-  Airport, Claim, Cash, Card, Trade, Query, Rules, Undo, Help, Quit, Invalid
+  Airport, Claim, Cash, Card, Trade, Query, Rules, Save, Load, Undo, Help, Quit,
+  Invalid
 };
 
 enum class QueryKind {

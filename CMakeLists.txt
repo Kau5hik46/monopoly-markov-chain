@@ -44,6 +44,7 @@ add_library(monopoly_core
   src/engine/formatter.cpp
   src/engine/query_service.cpp
   src/engine/executor.cpp
+  src/engine/session.cpp
   src/engine/repl.cpp
 )
 target_include_directories(monopoly_core PUBLIC ${CMAKE_SOURCE_DIR}/src)

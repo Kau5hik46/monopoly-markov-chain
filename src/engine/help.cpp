@@ -60,6 +60,8 @@ std::string manPage(const Palette& pal) {
     << "    rules <mugging|airport|pot> on|off    toggle a house rule mid-game\n\n";
 
   o << sec("CONTROL", pal) << "\n"
+    << "    save FILE                   write the game state to FILE (JSON)\n"
+    << "    load FILE                   restore a game state from FILE\n"
     << "    undo                        revert the last command\n"
     << "    help                        show this page\n"
     << "    quit                        exit\n\n";

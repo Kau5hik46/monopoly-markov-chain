@@ -128,6 +128,32 @@ TEST(Executor, TradeRejectsUnownedProperty) {
   EXPECT_FALSE(r.ok);
 }
 
+TEST(Executor, SaveAndLoadRoundTrip) {
+  Harness h;
+  h.run("init 2");
+  h.run("buy P1 @#24");
+  h.run("build P1 @#21 + 0");          // no-op
+  h.gs.player(1).cash = 7777777;
+  h.gs.setFreeParkingPot(4);
+  ASSERT_TRUE(h.run("save /tmp/mono_test_save.json").ok);
+
+  // Mutate, then load to restore.
+  h.run("cash P1 -= 5M");
+  h.gs.setOwner(24, monopoly::domain::kUnowned);
+  auto r = h.run("load /tmp/mono_test_save.json");
+  EXPECT_TRUE(r.ok);
+  EXPECT_EQ(h.gs.ownerOf(24), 0);       // P1 owns Trafalgar again
+  EXPECT_EQ(h.gs.player(1).cash, 7777777);
+  EXPECT_EQ(h.gs.freeParkingPot(), 4);
+}
+
+TEST(Executor, LoadMissingFileFails) {
+  Harness h;
+  h.run("init 1");
+  auto r = h.run("load /tmp/does_not_exist_12345.json");
+  EXPECT_FALSE(r.ok);
+}
+
 TEST(Executor, InvalidCommandReportsError) {
   Harness h;
   auto r = h.run("frobnicate");

@@ -5,6 +5,7 @@
 #include "domain/square.h"
 #include "engine/amount.h"
 #include "engine/help.h"
+#include "engine/session.h"
 #include "risk/rent_table.h"
 #include "rules/rule_logic.h"
 
@@ -99,6 +100,23 @@ CommandResult Executor::execute(const Command& c) {
       return r;
     case CommandKind::Query:
       return query_.handle(c);
+    case CommandKind::Save:
+      try {
+        saveGame(gs_, rules_, nextRoller_, c.name);
+        r.add(EffectKind::Info, "saved game to " + c.name);
+      } catch (const std::exception& e) { r.fail(e.what()); }
+      return r;
+    case CommandKind::Load:
+      try {
+        snapshot();  // allow undo of a load
+        loadGame(gs_, rules_, nextRoller_, c.name);
+        lastMover_ = -1;
+        r.add(EffectKind::Info, "loaded game from " + c.name);
+      } catch (const std::exception& e) {
+        if (!history_.empty()) { gs_ = history_.back(); history_.pop_back(); }
+        r.fail(e.what());
+      }
+      return r;
     case CommandKind::Undo:
       if (history_.empty()) { r.fail("nothing to undo"); return r; }
       gs_ = history_.back();

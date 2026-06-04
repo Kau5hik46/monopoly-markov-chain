@@ -269,6 +269,12 @@ Command parseLine(const std::string& line, const NameTable& names) {
     else return invalid("rules expects 'on' or 'off'");
     c.kind = CommandKind::Rules; return c;
   }
+  if (verb == "save" || verb == "load") {
+    if (cur.done()) return invalid(verb + " expects a filename");
+    c.name = cur.take();
+    c.kind = (verb == "save") ? CommandKind::Save : CommandKind::Load;
+    return c;
+  }
   if (verb == "undo") { c.kind = CommandKind::Undo; return c; }
   if (verb == "help") { c.kind = CommandKind::Help; return c; }
   if (verb == "quit" || verb == "exit") { c.kind = CommandKind::Quit; return c; }
