@@ -37,6 +37,9 @@ target_link_libraries(monopoly_core PUBLIC nlohmann_json::nlohmann_json)
 # --- REPL executable ---
 add_executable(monopoly src/app/main.cpp)
 target_link_libraries(monopoly PRIVATE monopoly_core)
+target_compile_definitions(monopoly PRIVATE
+  BOARD_JSON_PATH="${CMAKE_SOURCE_DIR}/data/board.london.json"
+  DECKS_JSON_PATH="${CMAKE_SOURCE_DIR}/data/decks.london.json")
 
 # --- Tests via FetchContent GoogleTest ---
 include(FetchContent)
