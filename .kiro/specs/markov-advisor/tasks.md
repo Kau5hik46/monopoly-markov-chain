@@ -37,8 +37,10 @@ Each milestone builds and tests independently (`ctest` green) before the next st
 
 | **M9** | **Extensions** | ✅ done | monopoly-aware free-parking placement; `card`/`trade` verbs (incl. card money effects); N-roll/ruin forecast (req B/D, `query forecast`); turn-order enforcement (+ doubles, P1 starts); land-on-GO 2x rule; in-jail vs just-visiting mugging fix; ACTION-NEEDED prompts; save/load to disk; `@` TAB autocomplete | `plans/milestone-9-extensions.md` | M4–M8 |
 
-**All milestones + reqs A–D complete.** 78 tests green. Remaining designed-for:
-multi-player rule-coupled Monte-Carlo (currently single-player forecast).
+| **M10** | **Coupled Monte-Carlo** | ✅ done | `risk::game_sim` — multi-player forward simulation with mugging coupling; `query simulate ^N` (per-player ruin / cash / robbed) | — | M5,M9 |
+
+**Everything in the design is now built.** 80 tests green. Reqs A–D + the analytic
+*and* coupled Monte-Carlo backends are complete.
 
 ## Cross-cutting acceptance gates (every milestone)
 - `cmake --build build && ctest --test-dir build` is green.
