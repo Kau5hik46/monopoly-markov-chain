@@ -32,6 +32,8 @@ add_library(monopoly_core
   src/probability/probability_engine.cpp
   src/risk/rent_table.cpp
   src/pricing/insurance_pricer.cpp
+  src/rules/rule_config.cpp
+  src/rules/rule_logic.cpp
 )
 target_include_directories(monopoly_core PUBLIC ${CMAKE_SOURCE_DIR}/src)
 target_compile_features(monopoly_core PUBLIC cxx_std_17)
@@ -67,11 +69,14 @@ add_executable(monopoly_tests
   tests/unit/test_game_state.cpp
   tests/unit/test_rent.cpp
   tests/unit/test_pricing.cpp
+  tests/unit/test_rule_config.cpp
+  tests/unit/test_rule_logic.cpp
 )
 target_link_libraries(monopoly_tests PRIVATE monopoly_core GTest::gtest_main)
 target_compile_definitions(monopoly_tests PRIVATE
   BOARD_JSON_PATH="${CMAKE_SOURCE_DIR}/data/board.london.json"
-  DECKS_JSON_PATH="${CMAKE_SOURCE_DIR}/data/decks.london.json")
+  DECKS_JSON_PATH="${CMAKE_SOURCE_DIR}/data/decks.london.json"
+  RULES_JSON_PATH="${CMAKE_SOURCE_DIR}/data/rules.default.json")
 
 include(GoogleTest)
 gtest_discover_tests(monopoly_tests)
