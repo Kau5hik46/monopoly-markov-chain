@@ -22,15 +22,16 @@ backend (rule-coupled cases + validation oracle), both behind one
 
 Each milestone builds and tests independently (`ctest` green) before the next starts.
 
-| # | Milestone | Produces | Plan file | Depends on |
-|---|---|---|---|---|
-| **M1** | **Foundation** | CMake project, GoogleTest wired, `math` (Matrix + stationary solver), `DiceModel` (2d6 joint table + mugging probabilities), stub REPL exe | `plans/milestone-1-foundation.md` | — |
-| **M2** | **Domain & board data** | `Square` variant, `TitleDeed`, `ColorGroup`, `Board`, `BoardFactory` (London JSON), `Player`/`Bank`/`Account`/`Asset`, `GameState`, `DeckFactory` (cards) | `plans/milestone-2-domain.md` | M1 |
-| **M3** | **Analytic probability engine** | `TransitionMatrix` (≈123 micro-states + card branching + 3-doubles→jail), `StationarySolver`, `TransientSolver`, `IDistributionProvider`, `ProbabilityEngine` facade; landing-distribution validation vs known Monopoly results | `plans/milestone-3-probability.md` | M1, M2 |
-| **M4** | **Risk & pricing** | `RentTable` (Visitor over squares), `RiskIndices` (single-roll liability), `InsurancePricer`/`OptionChain` with closed-form mugging EV (requirement A) | `plans/milestone-4-risk-pricing.md` | M2, M3 |
-| **M5** | **Rules subsystem** | `RuleConfig` (+Builder), CoR `RuleEngine`, handlers (Mugging, AirportTravel, FreeParkingPot), `JailPolicy`, `Specification`s | `plans/milestone-5-rules.md` | M2 |
-| **M6** | **Engine, DSL & REPL** | `Lexer`, `Parser` (Interpreter), `Command`+`Memento`, `Effect`/`CommandResult`, `CommandExecutor`, `ReadoutFormatter`, `Repl`, `Session`, `AdvisorEngine`, `main` | `plans/milestone-6-engine.md` | M2–M5 |
-| **M7** | **Monte-Carlo backend & validation** | `MonteCarloEngine` (Prototype/Flyweight/Object-Pool), backend selector, validation-oracle tests (analytic π vs MC, rules off), golden-replay sessions per house rule | `plans/milestone-7-montecarlo.md` | M3–M6 |
+| # | Milestone | Status | Produces | Plan file | Depends on |
+|---|---|---|---|---|---|
+| **M1** | **Foundation** | ✅ done | CMake project, GoogleTest wired, `math` (Matrix + stationary solver), `DiceModel` (2d6 joint table + mugging probabilities), stub REPL exe | `plans/milestone-1-foundation.md` | — |
+| **M2** | **Domain — board & cards** | ✅ done | `Square`, `ColorGroup`, `Board`, `BoardFactory` (London JSON), `CardDeck`/`DeckFactory` (canonical movement set) | `plans/milestone-2-domain.md` | M1 |
+| **M3** | **Analytic probability engine** | ✅ done | `TransitionMatrix` (123 micro-states + card branching + 3-doubles→jail), stationary + single-roll + N-roll transient, `IDistributionProvider`, `ProbabilityEngine` facade; runnable demo in `main` | `plans/milestone-3-probability.md` | M1, M2 |
+| **M2.5** | **Live-state entities** | ⬜ next | `Player`, `Bank`, `Account`, `Asset`, `GameState` (ownership/cash/houses/jail/pot) | `plans/milestone-2_5-game-state.md` | M2 |
+| **M4** | **Risk & pricing** | ⬜ todo | `RentTable` (Visitor over squares), `RiskIndices` (single-roll liability), `InsurancePricer`/`OptionChain` with closed-form mugging EV (requirement A) | `plans/milestone-4-risk-pricing.md` | M2.5, M3 |
+| **M5** | **Rules subsystem** | ⬜ todo | `RuleConfig` (+Builder), CoR `RuleEngine`, handlers (Mugging, AirportTravel, FreeParkingPot), `JailPolicy`, `Specification`s | `plans/milestone-5-rules.md` | M2.5 |
+| **M6** | **Engine, DSL & REPL** | ⬜ todo | `Lexer`, `Parser` (Interpreter), `Command`+`Memento`, `Effect`/`CommandResult`, `CommandExecutor`, `ReadoutFormatter`, `Repl`, `Session`, `AdvisorEngine`, `main` | `plans/milestone-6-engine.md` | M2.5–M5 |
+| **M7** | **Monte-Carlo backend & validation** | ⬜ todo | `MonteCarloEngine` (Prototype/Flyweight/Object-Pool), backend selector, validation-oracle tests (analytic π vs MC, rules off), golden-replay sessions per house rule | `plans/milestone-7-montecarlo.md` | M3–M6 |
 
 ## Cross-cutting acceptance gates (every milestone)
 - `cmake --build build && ctest --test-dir build` is green.
