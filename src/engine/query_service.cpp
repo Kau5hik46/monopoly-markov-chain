@@ -7,6 +7,7 @@
 #include "engine/formatter.h"
 #include "pricing/insurance_pricer.h"
 #include "pricing/option_chain.h"
+#include "risk/forecast.h"
 
 namespace monopoly::engine {
 
@@ -154,6 +155,25 @@ CommandResult QueryService::handle(const Command& c) const {
            << pal_.cyan(formatMoney(row.fairPremium)) << "\n";
       }
       os << " " << pal_.dim("premium = E[max(loss - K, 0)] over the next roll");
+      r.add(EffectKind::Query, os.str());
+      return r;
+    }
+    case QueryKind::Forecast: {
+      if (c.player < 0 || c.player >= gs_.numPlayers()) { r.fail("unknown player"); return r; }
+      const int n = std::max(1, c.count);
+      auto fc = risk::forecast(gs_, c.player, n, resolver_);
+      const long cash = gs_.player(c.player).cash;
+      os << sectionHeader("FORECAST  P" + std::to_string(c.player + 1) + " over " +
+                              std::to_string(n) + " rolls",
+                          "Monte-Carlo", pal_) << "\n";
+      os << dots("Expected cumulative rent", 33)
+         << formatMoney(fc.expectedCumulativeRent) << "\n";
+      std::ostringstream rp; rp << (fc.ruinProbability * 100);
+      std::string ruin = rp.str().substr(0, 5) + "%";
+      os << dots("Ruin probability", 33)
+         << (fc.ruinProbability > 0.25 ? pal_.red(ruin) : ruin)
+         << "  (P[cumulative rent > " << formatMoney(static_cast<double>(cash))
+         << "])";
       r.add(EffectKind::Query, os.str());
       return r;
     }

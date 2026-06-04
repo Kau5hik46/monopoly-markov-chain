@@ -250,6 +250,13 @@ Command parseLine(const std::string& line, const NameTable& names) {
       if (!needPlayer(c.player)) return invalid("query chain expects a player");
       return c;
     }
+    if (sub == "forecast") {
+      c.query = QueryKind::Forecast;
+      if (!needPlayer(c.player)) return invalid("query forecast expects a player");
+      if (cur.eat("^")) { auto n = cur.done() ? std::nullopt : parseInt(cur.take()); c.count = n ? *n : 10; }
+      else c.count = 10;
+      return c;
+    }
     if (sub == "value") { c.query = QueryKind::Value; if (!needSquare(c.posA)) return invalid("query value expects @square"); return c; }
     if (sub == "state") { c.query = QueryKind::State; return c; }
     return invalid("unknown query: " + sub);

@@ -9,7 +9,9 @@ enum class CommandKind {
   Airport, Claim, Cash, Card, Trade, Query, Rules, Undo, Help, Quit, Invalid
 };
 
-enum class QueryKind { Risk, Options, Dist, Stationary, Value, State, Board, Chain };
+enum class QueryKind {
+  Risk, Options, Dist, Stationary, Value, State, Board, Chain, Forecast
+};
 
 // Parsed command: a tagged value (kind + operands). The executor evaluates it.
 struct Command {
