@@ -329,6 +329,57 @@ CommandResult Executor::execute(const Command& c) {
                                           formatMoney(static_cast<double>(c.amount)));
       break;
     }
+    case CommandKind::Card: {
+      if (!validPlayer(c.player, r)) break;
+      auto& pl = gs_.player(c.player);
+      if (c.name == "JAIL") {
+        pl.position = 10; pl.inJail = true; pl.consecutiveDoubles = 0;
+        r.add(EffectKind::SentToJail,
+              "P" + std::to_string(c.player + 1) + " card: go to JAIL");
+        lastMover_ = c.player;
+        break;
+      }
+      const int oldPos = pl.position;
+      int target = oldPos;
+      bool allowGo = true;
+      if (c.name == "GO") target = 0;
+      else if (c.name == "ADVANCE") target = c.posA;
+      else if (c.name == "BACK3") { target = (oldPos - 3 + domain::kBoardSize) % domain::kBoardSize; allowGo = false; }
+      else if (c.name == "STATION") target = gs_.board().nearestForward(oldPos, SquareType::Station);
+      else if (c.name == "UTILITY") target = gs_.board().nearestForward(oldPos, SquareType::Utility);
+      else { r.fail("unknown card effect"); break; }
+      const bool passed = allowGo && target < oldPos;
+      pl.position = target;
+      r.add(EffectKind::Move, "P" + std::to_string(c.player + 1) +
+                                  " card: advance to " + gs_.board().at(target).name);
+      if (passed) {
+        pl.cash += rules_.passGoBonus;
+        r.add(EffectKind::PassGo, "passes GO, collects " + formatMoney(rules_.passGoBonus));
+      }
+      resolveLanding(c.player, target, 7, r);
+      lastMover_ = c.player;
+      break;
+    }
+    case CommandKind::Trade: {
+      if (!validPlayer(c.player, r) || !validPlayer(c.player2, r)) break;
+      bool ok = true; std::string err;
+      for (int sq : c.squaresA)
+        if (gs_.ownerOf(sq) != c.player) { ok = false; err = "P" + std::to_string(c.player + 1) + " does not own " + gs_.board().at(sq).name; }
+      for (int sq : c.squaresB)
+        if (gs_.ownerOf(sq) != c.player2) { ok = false; err = "P" + std::to_string(c.player2 + 1) + " does not own " + gs_.board().at(sq).name; }
+      if (!ok) { r.fail(err); break; }
+      for (int sq : c.squaresA) gs_.setOwner(sq, c.player2);
+      for (int sq : c.squaresB) gs_.setOwner(sq, c.player);
+      gs_.player(c.player).cash += c.amountB - c.amountA;
+      gs_.player(c.player2).cash += c.amountA - c.amountB;
+      r.add(EffectKind::Sell,
+            "trade P" + std::to_string(c.player + 1) + " <-> P" +
+                std::to_string(c.player2 + 1) + ": " +
+                std::to_string(c.squaresA.size()) + " prop/" + formatMoney(c.amountA) +
+                " <-> " + std::to_string(c.squaresB.size()) + " prop/" +
+                formatMoney(c.amountB));
+      break;
+    }
     case CommandKind::Rules: {
       bool* target = nullptr;
       if (c.name == "mugging") target = &rules_.muggingEnabled;

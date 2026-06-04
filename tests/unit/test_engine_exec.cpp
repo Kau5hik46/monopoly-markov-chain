@@ -88,6 +88,46 @@ TEST(Executor, GoToJailSquareJails) {
   EXPECT_EQ(h.gs.player(0).position, 10);
 }
 
+TEST(Executor, CardAdvanceToGoCollectsBonus) {
+  Harness h;
+  h.run("init 1");
+  h.gs.player(0).position = 30;       // somewhere past GO
+  long before = h.gs.player(0).cash;
+  auto r = h.run("card P1 : GO");
+  EXPECT_TRUE(r.ok);
+  EXPECT_EQ(h.gs.player(0).position, 0);
+  EXPECT_EQ(h.gs.player(0).cash, before + h.rules.passGoBonus);
+}
+
+TEST(Executor, CardGoToJail) {
+  Harness h;
+  h.run("init 1");
+  h.run("card P1 : JAIL");
+  EXPECT_TRUE(h.gs.player(0).inJail);
+  EXPECT_EQ(h.gs.player(0).position, 10);
+}
+
+TEST(Executor, TradeSwapsPropertyAndCash) {
+  Harness h;
+  h.run("init 2");
+  h.run("buy P1 @#24");               // P1 owns Trafalgar
+  h.run("buy P2 @#21");               // P2 owns London Eye
+  long c1 = h.gs.player(0).cash, c2 = h.gs.player(1).cash;
+  auto r = h.run("trade P1 <-> P2 : @#24 <-> @#21 1M");  // P1 gives 24, P2 gives 21 + 1M
+  EXPECT_TRUE(r.ok);
+  EXPECT_EQ(h.gs.ownerOf(24), 1);     // now P2
+  EXPECT_EQ(h.gs.ownerOf(21), 0);     // now P1
+  EXPECT_EQ(h.gs.player(0).cash, c1 + 1000000);
+  EXPECT_EQ(h.gs.player(1).cash, c2 - 1000000);
+}
+
+TEST(Executor, TradeRejectsUnownedProperty) {
+  Harness h;
+  h.run("init 2");
+  auto r = h.run("trade P1 <-> P2 : @#24 <-> @#21");  // nobody owns these
+  EXPECT_FALSE(r.ok);
+}
+
 TEST(Executor, InvalidCommandReportsError) {
   Harness h;
   auto r = h.run("frobnicate");

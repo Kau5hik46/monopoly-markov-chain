@@ -70,6 +70,26 @@ TEST(Parser, MugAndAirportAndCash) {
   EXPECT_EQ(cash.amount, 500000);
 }
 
+TEST(Parser, CardAndTrade) {
+  auto c = parse("card P1 : BACK3");
+  EXPECT_EQ(c.kind, CommandKind::Card);
+  EXPECT_EQ(c.name, "BACK3");
+  auto cg = parse("card P2 : @GO");
+  EXPECT_EQ(cg.kind, CommandKind::Card);
+  EXPECT_EQ(cg.name, "ADVANCE");
+  EXPECT_EQ(cg.posA, 0);
+
+  auto t = parse("trade P1 <-> P2 : @#24 500K <-> @#21 @#23");
+  EXPECT_EQ(t.kind, CommandKind::Trade);
+  EXPECT_EQ(t.player, 0);
+  EXPECT_EQ(t.player2, 1);
+  ASSERT_EQ(t.squaresA.size(), 1u);
+  EXPECT_EQ(t.squaresA[0], 24);
+  EXPECT_EQ(t.amountA, 500000);
+  ASSERT_EQ(t.squaresB.size(), 2u);
+  EXPECT_EQ(t.squaresB[1], 23);
+}
+
 TEST(Parser, QueryForms) {
   EXPECT_EQ(parse("query stationary").query, QueryKind::Stationary);
   auto d = parse("query dist P1 ^5");

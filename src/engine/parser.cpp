@@ -174,6 +174,49 @@ Command parseLine(const std::string& line, const NameTable& names) {
     if (!needPlayer(c.player)) return invalid("claim expects a player");
     c.kind = CommandKind::Claim; return c;
   }
+  if (verb == "card") {
+    if (!needPlayer(c.player)) return invalid("card expects a player");
+    if (!cur.eat(":")) return invalid("card expects ':'");
+    if (cur.eat("@")) {
+      if (cur.done()) return invalid("card: expected a square");
+      auto pos = names.resolve(cur.take());
+      if (!pos) return invalid("card: unknown square");
+      c.name = "ADVANCE"; c.posA = *pos;
+    } else {
+      if (cur.done()) return invalid("card expects an effect");
+      std::string k = cur.take();
+      if (k != "GO" && k != "JAIL" && k != "BACK3" && k != "STATION" && k != "UTILITY")
+        return invalid("card effect: GO|JAIL|BACK3|STATION|UTILITY or @SQ");
+      c.name = k;
+    }
+    c.kind = CommandKind::Card; return c;
+  }
+  if (verb == "trade") {
+    if (!needPlayer(c.player)) return invalid("trade expects a player");
+    if (!cur.eat("<->")) return invalid("trade expects '<->'");
+    if (!needPlayer(c.player2)) return invalid("trade expects a second player");
+    if (!cur.eat(":")) return invalid("trade expects ':'");
+    auto bundle = [&](std::vector<int>& squares, long& amount,
+                      const std::string& stop) -> bool {
+      while (!cur.done() && cur.peek() != stop) {
+        if (cur.eat("@")) {
+          if (cur.done()) return false;
+          auto pos = names.resolve(cur.take());
+          if (!pos) return false;
+          squares.push_back(*pos);
+        } else {
+          auto a = parseAmount(cur.take());
+          if (!a) return false;
+          amount += *a;
+        }
+      }
+      return true;
+    };
+    if (!bundle(c.squaresA, c.amountA, "<->")) return invalid("trade: bad first bundle");
+    if (!cur.eat("<->")) return invalid("trade expects '<->' between bundles");
+    if (!bundle(c.squaresB, c.amountB, "")) return invalid("trade: bad second bundle");
+    c.kind = CommandKind::Trade; return c;
+  }
   if (verb == "cash") {
     if (!needPlayer(c.player)) return invalid("cash expects a player");
     if (cur.eat("+=")) c.sign = true;

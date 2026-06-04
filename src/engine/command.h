@@ -1,11 +1,12 @@
 #pragma once
 #include <string>
+#include <vector>
 
 namespace monopoly::engine {
 
 enum class CommandKind {
   None, Init, Roll, Buy, Sell, Rent, Build, Mortgage, Unmortgage, Tax, Jail, Mug,
-  Airport, Claim, Cash, Query, Rules, Undo, Help, Quit, Invalid
+  Airport, Claim, Cash, Card, Trade, Query, Rules, Undo, Help, Quit, Invalid
 };
 
 enum class QueryKind { Risk, Options, Dist, Stationary, Value, State, Board, Chain };
@@ -26,8 +27,14 @@ struct Command {
   int count = 0;           // build delta / dist horizon / init N
   bool sign = true;        // +/- for build, jail, cash
   QueryKind query = QueryKind::State;
-  std::string name;        // rules name, or tax type ("INCOME"/"SUPER")
+  std::string name;        // rules name, tax type, or card keyword
   bool flag = false;       // rules on/off
+
+  // trade bundles: A is given by `player` to `player2`, B by `player2` to `player`.
+  std::vector<int> squaresA;
+  std::vector<int> squaresB;
+  long amountA = 0;
+  long amountB = 0;
 };
 
 }  // namespace monopoly::engine

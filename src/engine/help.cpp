@@ -30,14 +30,16 @@ std::string manPage(const Palette& pal) {
     << "    roll Pi = d1,d2             apply a dice roll (GO bonus, jail, doubles handled)\n"
     << "    jail Pi +|-                 send to / release from jail\n"
     << "    airport Pi @FROM -> @TO     travel between two airports you own (skips a turn)\n"
-    << "    mug Pi vs Pj = a:b          resolve a mugging contest (Pi's total : Pj's total)\n\n";
+    << "    mug Pi vs Pj = a:b          resolve a mugging contest (Pi's total : Pj's total)\n"
+    << "    card Pi : GO|JAIL|BACK3|STATION|UTILITY|@SQ   apply a drawn card's movement\n\n";
 
   o << sec("PROPERTY", pal) << "\n"
     << "    buy Pi @SQ [= amt]          buy a property (price defaults to face value)\n"
     << "    sell Pi -> Pj @SQ [= amt]   transfer a property for cash\n"
     << "    rent Pi -> Pj @SQ [= amt]   pay rent (auto-computed if amount omitted)\n"
     << "    build Pi @SQ +|- n          add / remove n houses (5 = hotel)\n"
-    << "    mortgage|unmortgage Pi @SQ  toggle a mortgage\n\n";
+    << "    mortgage|unmortgage Pi @SQ  toggle a mortgage\n"
+    << "    trade Pi <-> Pj : @A 1M <-> @B   swap property+cash bundles between players\n\n";
 
   o << sec("MONEY", pal) << "\n"
     << "    tax Pi = amt @INCOME|SUPER  pay tax (feeds the free-parking house pot)\n"
