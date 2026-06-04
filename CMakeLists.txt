@@ -37,6 +37,7 @@ add_executable(monopoly_tests
   tests/unit/test_smoke.cpp
   tests/unit/test_matrix.cpp
   tests/unit/test_dice.cpp
+  tests/unit/test_board.cpp
 )
 target_link_libraries(monopoly_tests PRIVATE monopoly_core GTest::gtest_main)
 
