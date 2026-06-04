@@ -11,7 +11,7 @@ enum class CommandKind {
 };
 
 enum class QueryKind {
-  Risk, Options, Dist, Stationary, Value, State, Board, Chain, Forecast
+  Risk, Options, Dist, Stationary, Value, State, Board, Chain, Forecast, Simulate
 };
 
 // Parsed command: a tagged value (kind + operands). The executor evaluates it.

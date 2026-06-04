@@ -257,6 +257,12 @@ Command parseLine(const std::string& line, const NameTable& names) {
       else c.count = 10;
       return c;
     }
+    if (sub == "simulate") {
+      c.query = QueryKind::Simulate;
+      if (cur.eat("^")) { auto n = cur.done() ? std::nullopt : parseInt(cur.take()); c.count = n ? *n : 10; }
+      else c.count = 10;
+      return c;
+    }
     if (sub == "value") { c.query = QueryKind::Value; if (!needSquare(c.posA)) return invalid("query value expects @square"); return c; }
     if (sub == "state") { c.query = QueryKind::State; return c; }
     return invalid("unknown query: " + sub);

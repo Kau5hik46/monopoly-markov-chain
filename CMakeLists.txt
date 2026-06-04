@@ -33,6 +33,7 @@ add_library(monopoly_core
   src/probability/monte_carlo.cpp
   src/risk/rent_table.cpp
   src/risk/forecast.cpp
+  src/risk/game_sim.cpp
   src/pricing/insurance_pricer.cpp
   src/pricing/option_chain.cpp
   src/rules/rule_config.cpp
@@ -91,6 +92,7 @@ add_executable(monopoly_tests
   tests/unit/test_monte_carlo.cpp
   tests/unit/test_option_chain.cpp
   tests/unit/test_forecast.cpp
+  tests/unit/test_game_sim.cpp
 )
 target_link_libraries(monopoly_tests PRIVATE monopoly_core GTest::gtest_main)
 target_compile_definitions(monopoly_tests PRIVATE

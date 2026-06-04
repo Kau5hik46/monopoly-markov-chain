@@ -8,6 +8,7 @@
 #include "pricing/insurance_pricer.h"
 #include "pricing/option_chain.h"
 #include "risk/forecast.h"
+#include "risk/game_sim.h"
 
 namespace monopoly::engine {
 
@@ -174,6 +175,31 @@ CommandResult QueryService::handle(const Command& c) const {
          << (fc.ruinProbability > 0.25 ? pal_.red(ruin) : ruin)
          << "  (P[cumulative rent > " << formatMoney(static_cast<double>(cash))
          << "])";
+      r.add(EffectKind::Query, os.str());
+      return r;
+    }
+    case QueryKind::Simulate: {
+      if (gs_.numPlayers() == 0) { r.fail("no players — 'init N' first"); return r; }
+      const int n = std::max(1, c.count);
+      auto fc = risk::simulateGame(gs_, rules_, n, resolver_);
+      os << sectionHeader("SIMULATE  " + std::to_string(n) + " rounds, all players",
+                          "coupled Monte-Carlo", pal_) << "\n";
+      os << " " << padRight("PLAYER", 8) << padLeft("RUIN%", 8) << "   "
+         << padRight("E[cash change]", 16) << "robbed\n";
+      for (int p = 0; p < gs_.numPlayers(); ++p) {
+        const auto& o = fc.players[static_cast<std::size_t>(p)];
+        std::ostringstream rp; rp << (o.ruinProbability * 100);
+        std::string ruinCell = padLeft(rp.str().substr(0, 5) + "%", 8);
+        if (o.ruinProbability > 0.25) ruinCell = pal_.red(ruinCell);
+        const double d = o.expectedCashDelta;
+        std::string cashCell = padRight((d >= 0 ? "+" : "-") +
+                                            formatMoney(d < 0 ? -d : d), 16);
+        cashCell = (d >= 0) ? pal_.green(cashCell) : pal_.red(cashCell);
+        std::ostringstream rb; rb << o.expectedTimesRobbed;
+        os << " " << padRight("P" + std::to_string(p + 1), 8) << ruinCell << "   "
+           << cashCell << rb.str().substr(0, 4) << "\n";
+      }
+      os << " " << pal_.dim("includes mugging displacement & rent; ownership fixed");
       r.add(EffectKind::Query, os.str());
       return r;
     }

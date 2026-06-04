@@ -52,6 +52,7 @@ std::string manPage(const Palette& pal) {
     << "    query risk|options Pi       risk profile + fair insurance premium for Pi\n"
     << "    query chain Pi              option chain: fair premium across deductibles\n"
     << "    query forecast Pi ^N        N-roll expected cumulative rent + ruin probability\n"
+    << "    query simulate ^N           coupled Monte-Carlo: all players, N rounds (ruin/cash)\n"
     << "    query dist Pi ^n            landing distribution n rolls ahead\n"
     << "    query stationary            long-run landing probabilities\n"
     << "    query value @SQ             long-run landing probability for one square\n\n";
