@@ -10,13 +10,25 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 add_compile_options(-Wall -Wextra -Wpedantic)
 
+# --- Third-party: nlohmann/json (header-only) ---
+include(FetchContent)
+FetchContent_Declare(
+  nlohmann_json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG v3.11.3
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 # --- Core library (sources added as milestones progress) ---
 add_library(monopoly_core
   src/math/matrix.cpp
   src/probability/dice.cpp
+  src/domain/board.cpp
+  src/domain/board_factory.cpp
 )
 target_include_directories(monopoly_core PUBLIC ${CMAKE_SOURCE_DIR}/src)
 target_compile_features(monopoly_core PUBLIC cxx_std_17)
+target_link_libraries(monopoly_core PUBLIC nlohmann_json::nlohmann_json)
 
 # --- REPL executable ---
 add_executable(monopoly src/app/main.cpp)
@@ -40,6 +52,8 @@ add_executable(monopoly_tests
   tests/unit/test_board.cpp
 )
 target_link_libraries(monopoly_tests PRIVATE monopoly_core GTest::gtest_main)
+target_compile_definitions(monopoly_tests PRIVATE
+  BOARD_JSON_PATH="${CMAKE_SOURCE_DIR}/data/board.london.json")
 
 include(GoogleTest)
 gtest_discover_tests(monopoly_tests)
