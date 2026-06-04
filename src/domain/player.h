@@ -9,6 +9,7 @@ struct PlayerState {
   long cash = 0;
   bool inJail = false;
   int jailAttempts = 0;
+  int consecutiveDoubles = 0;  // this turn; 3 in a row -> jail
 };
 
 }  // namespace monopoly::domain

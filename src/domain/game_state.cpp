@@ -11,7 +11,7 @@ int GameState::addPlayer(const std::string& name, long startingCash) {
 }
 
 bool GameState::ownsWholeGroup(int playerId, ColorGroup g) const {
-  auto members = board_.positionsInGroup(g);
+  auto members = board_->positionsInGroup(g);
   if (members.empty()) return false;
   for (int pos : members)
     if (owner_[static_cast<std::size_t>(pos)] != playerId) return false;
@@ -20,7 +20,7 @@ bool GameState::ownsWholeGroup(int playerId, ColorGroup g) const {
 
 int GameState::countOwnedInGroup(int playerId, ColorGroup g) const {
   int n = 0;
-  for (int pos : board_.positionsInGroup(g))
+  for (int pos : board_->positionsInGroup(g))
     if (owner_[static_cast<std::size_t>(pos)] == playerId) ++n;
   return n;
 }

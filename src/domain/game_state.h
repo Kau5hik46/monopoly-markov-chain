@@ -20,13 +20,14 @@ struct BankState {
 // Mutable game ground truth. Holds a reference to the immutable Board.
 class GameState {
  public:
-  explicit GameState(const Board& board) : board_(board) {
+  explicit GameState(const Board& board) : board_(&board) {
     owner_.fill(kUnowned);
     houses_.fill(0);
     mortgaged_.fill(false);
   }
+  // Copyable/assignable (board held by pointer) so the executor can snapshot for undo.
 
-  const Board& board() const { return board_; }
+  const Board& board() const { return *board_; }
 
   // Players ---------------------------------------------------------------
   int addPlayer(const std::string& name, long startingCash);
@@ -64,7 +65,7 @@ class GameState {
   void setFreeParkingPot(int n) { freeParkingPot_ = n; }
 
  private:
-  const Board& board_;
+  const Board* board_;
   std::vector<PlayerState> players_;
   std::array<int, kBoardSize> owner_;
   std::array<int, kBoardSize> houses_;
