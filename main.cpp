@@ -8,6 +8,9 @@ using namespace std;
 #include "properties/title_deeds.h"
 
 int main(void) {
-    create_title_deeds("title.csv");
-    return 0;
+    int number_of_players;
+    cout << "Number of players: ";
+    cin >> number_of_players;
+
+    
 }

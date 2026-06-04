@@ -18,7 +18,7 @@ enum ColorGroup
     GREEN,
     BLUE,
     UTILITY,
-    TRANSPORTS,
+    TRANSPORT,
     CHANCE,
     COMMUNITY_CHEST,
     JAIL,

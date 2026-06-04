@@ -6,7 +6,7 @@ using namespace std;
 class Account {
     private:
         float cash;
-        set<sset*> assets;
+        set<Asset*> assets;
         static list<string> ledger;
     public:
     string name;

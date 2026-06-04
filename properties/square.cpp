@@ -24,6 +24,7 @@ class Square
     }
     ~Square()
     {
+        
     }
 
     void fall(Player* player)

@@ -14,5 +14,6 @@ public:
     {
         this->face_value = face_value;
         this->__owner = owner_account;
+        this->is_mortgaged = false;
     }
 }
