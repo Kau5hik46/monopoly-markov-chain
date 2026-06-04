@@ -34,6 +34,9 @@ add_library(monopoly_core
   src/pricing/insurance_pricer.cpp
   src/rules/rule_config.cpp
   src/rules/rule_logic.cpp
+  src/engine/name_table.cpp
+  src/engine/lexer.cpp
+  src/engine/parser.cpp
 )
 target_include_directories(monopoly_core PUBLIC ${CMAKE_SOURCE_DIR}/src)
 target_compile_features(monopoly_core PUBLIC cxx_std_17)
@@ -71,6 +74,8 @@ add_executable(monopoly_tests
   tests/unit/test_pricing.cpp
   tests/unit/test_rule_config.cpp
   tests/unit/test_rule_logic.cpp
+  tests/unit/test_engine_lex.cpp
+  tests/unit/test_engine_parse.cpp
 )
 target_link_libraries(monopoly_tests PRIVATE monopoly_core GTest::gtest_main)
 target_compile_definitions(monopoly_tests PRIVATE
