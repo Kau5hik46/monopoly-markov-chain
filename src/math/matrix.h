@@ -30,4 +30,9 @@ class Matrix {
   std::vector<double> data_;  // row-major, size rows_*cols_
 };
 
+// Stationary distribution pi solving pi*P = pi for a row-stochastic P
+// (each row sums to 1). Computed by power iteration from the uniform vector.
+[[nodiscard]] std::vector<double> stationaryDistribution(
+    const Matrix& P, double tol = 1e-12, std::size_t maxIter = 1000000);
+
 }  // namespace monopoly::math

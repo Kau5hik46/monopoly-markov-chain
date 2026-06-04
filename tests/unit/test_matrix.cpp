@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
+#include <cmath>
 #include "math/matrix.h"
 
 using monopoly::math::Matrix;
+using monopoly::math::stationaryDistribution;
 
 TEST(Matrix, ElementAccessAndDims) {
   Matrix m(2, 3, 0.0);
@@ -32,4 +34,16 @@ TEST(Matrix, RowVectorTimesMatrix) {
   ASSERT_EQ(r.size(), 2u);
   EXPECT_DOUBLE_EQ(r[0], 4);
   EXPECT_DOUBLE_EQ(r[1], 6);
+}
+
+TEST(Stationary, TwoStateChain) {
+  // P = [[0.9,0.1],[0.5,0.5]]  =>  pi = [5/6, 1/6]
+  Matrix p(2, 2, 0.0);
+  p(0, 0) = 0.9; p(0, 1) = 0.1;
+  p(1, 0) = 0.5; p(1, 1) = 0.5;
+  auto pi = stationaryDistribution(p);
+  ASSERT_EQ(pi.size(), 2u);
+  EXPECT_NEAR(pi[0], 5.0 / 6.0, 1e-9);
+  EXPECT_NEAR(pi[1], 1.0 / 6.0, 1e-9);
+  EXPECT_NEAR(pi[0] + pi[1], 1.0, 1e-12);
 }
