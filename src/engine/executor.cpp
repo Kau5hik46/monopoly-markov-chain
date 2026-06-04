@@ -4,6 +4,7 @@
 #include <string>
 #include "domain/square.h"
 #include "engine/amount.h"
+#include "engine/help.h"
 #include "risk/rent_table.h"
 #include "rules/rule_logic.h"
 
@@ -11,31 +12,9 @@ namespace monopoly::engine {
 
 using domain::SquareType;
 
-std::string helpText() {
-  return
-      "Commands:\n"
-      "  init N                     start a game with N players (P1..PN)\n"
-      "  roll Pi = d1,d2            apply a dice roll (handles GO, jail, doubles)\n"
-      "  buy Pi @SQ [= amt]         buy a property (price defaults to face value)\n"
-      "  sell Pi -> Pj @SQ [= amt]  transfer a property for cash\n"
-      "  rent Pi -> Pj @SQ [= amt]  pay rent (auto-computed if amount omitted)\n"
-      "  build Pi @SQ +|- n         add/remove n houses\n"
-      "  mortgage|unmortgage Pi @SQ toggle a mortgage\n"
-      "  tax Pi = amt @INCOME|SUPER pay tax (feeds the free-parking pot)\n"
-      "  jail Pi +|-                send to / release from jail\n"
-      "  mug Pi vs Pj = a:b         resolve a mugging contest (totals)\n"
-      "  airport Pi @FROM -> @TO    travel between owned airports\n"
-      "  claim Pi                   claim the free-parking house pot\n"
-      "  cash Pi +=|-= amt          adjust a player's cash\n"
-      "  query risk|options|dist|stationary|value|state [Pi|@SQ|^n]\n"
-      "  rules <mugging|airport|pot> on|off\n"
-      "  undo | help | quit\n"
-      "  squares: @#<pos> or @<NAME_WITH_UNDERSCORES>; amounts accept K/M\n";
-}
-
 Executor::Executor(domain::GameState& gs, const domain::Decks& decks,
-                   rules::RuleConfig& rules)
-    : gs_(gs), rules_(rules), query_(gs, decks, rules) {}
+                   rules::RuleConfig& rules, const Palette& pal)
+    : gs_(gs), rules_(rules), pal_(pal), query_(gs, decks, rules, pal) {}
 
 void Executor::snapshot() {
   history_.push_back(gs_);
@@ -102,7 +81,7 @@ CommandResult Executor::execute(const Command& c) {
       r.fail(c.error);
       return r;
     case CommandKind::Help:
-      r.add(EffectKind::Info, "\n" + helpText());
+      r.add(EffectKind::Query, manPage(pal_));
       return r;
     case CommandKind::Quit:
       r.add(EffectKind::Info, "bye");

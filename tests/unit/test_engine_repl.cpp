@@ -25,10 +25,26 @@ TEST(Repl, RunsScriptedSessionWithEffectsAndPanel) {
   const std::string s = out.str();
   EXPECT_NE(s.find("started game with 2 players"), std::string::npos);
   EXPECT_NE(s.find("buys TRAFALGAR SQUARE"), std::string::npos);
-  EXPECT_NE(s.find("state"), std::string::npos);          // state panel rendered
-  EXPECT_NE(s.find("advisory"), std::string::npos);       // advisory rendered
+  EXPECT_NE(s.find("STATE"), std::string::npos);             // state panel rendered
+  EXPECT_NE(s.find("ADVISORY"), std::string::npos);          // advisory rendered
+  EXPECT_NE(s.find("TOP THREATS"), std::string::npos);       // threats list
   EXPECT_NE(s.find("long-run landing"), std::string::npos);  // query output
   EXPECT_NE(s.find("bye"), std::string::npos);
+}
+
+TEST(Repl, BoardAndHelpCommands) {
+  auto board = domain::loadBoardFromFile(BOARD_JSON_PATH);
+  auto decks = domain::loadDecksFromFile(DECKS_JSON_PATH);
+  rules::RuleConfig rules;
+  std::ostringstream out;
+  engine::Repl repl(board, decks, rules, out);
+  std::istringstream in("init 2\nquery board\nhelp\nquit\n");
+  repl.run(in);
+  const std::string s = out.str();
+  EXPECT_NE(s.find("BOARD"), std::string::npos);
+  EXPECT_NE(s.find("TRAFALGAR SQUARE"), std::string::npos);  // board lists squares
+  EXPECT_NE(s.find("SYNOPSIS"), std::string::npos);          // man-page help
+  EXPECT_NE(s.find("EXAMPLES"), std::string::npos);
 }
 
 TEST(Repl, WizardDefaultsOnEmptyInput) {

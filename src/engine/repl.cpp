@@ -34,21 +34,22 @@ rules::RuleConfig runRulesWizard(std::istream& in, std::ostream& out) {
 }
 
 Repl::Repl(const domain::Board& board, const domain::Decks& decks,
-           const rules::RuleConfig& rules, std::ostream& out)
-    : board_(board), rules_(rules), gs_(board_), names_(board_),
-      exec_(gs_, decks, rules_), out_(out) {}
+           const rules::RuleConfig& rules, std::ostream& out, const Palette& pal)
+    : board_(board), rules_(rules), pal_(pal), gs_(board_), names_(board_),
+      exec_(gs_, decks, rules_, pal), out_(out) {}
 
 void Repl::render(const std::string& line, const CommandResult& result,
                   CommandKind kind) {
-  out_ << "> " << line << "\n";
-  out_ << formatEffects(result);
+  // Interactively the terminal already shows the typed line; only echo when piped.
+  if (!pal_.on) out_ << formatEcho(line, result.ok, pal_);
+  out_ << formatEffects(result, pal_);
   const bool showPanel = result.ok && gs_.numPlayers() > 0 &&
                          kind != CommandKind::Query && kind != CommandKind::Help;
   if (showPanel) {
-    out_ << formatStatePanel(gs_);
+    out_ << formatStatePanel(gs_, exec_.lastMover(), pal_);
     const int n = gs_.numPlayers();
     const int next = (exec_.lastMover() >= 0) ? (exec_.lastMover() + 1) % n : 0;
-    out_ << exec_.queries().advisory(next);
+    out_ << "\n" << exec_.queries().advisory(next);
   }
   out_ << "\n";
   out_.flush();

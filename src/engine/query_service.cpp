@@ -17,11 +17,16 @@ std::vector<int> rankTop(const probability::PositionVector& v, int k) {
   if (static_cast<int>(order.size()) > k) order.resize(static_cast<std::size_t>(k));
   return order;
 }
+std::string dots(const std::string& label, std::size_t to) {
+  std::string s = " " + label + " ";
+  while (s.size() < to) s += ".";
+  return s + " ";
+}
 }  // namespace
 
 QueryService::QueryService(const domain::GameState& gs, const domain::Decks& decks,
-                           const rules::RuleConfig& rules)
-    : gs_(gs), rules_(rules), engine_(gs.board(), decks),
+                           const rules::RuleConfig& rules, const Palette& pal)
+    : gs_(gs), rules_(rules), pal_(pal), engine_(gs.board(), decks),
       resolver_(gs.board(), decks) {}
 
 std::string QueryService::advisory(int mover) const {
@@ -30,16 +35,47 @@ std::string QueryService::advisory(int mover) const {
   cfg.muggingEnabled = rules_.muggingEnabled;
   cfg.muggingAmount = rules_.muggingAmount;
   auto q = pricing::priceNextRoll(gs_, mover, resolver_, cfg);
+  const long cash = gs_.player(mover).cash;
+
+  // Qualitative risk level.
+  const bool insolvent = (cash > 0 && q.maxRent > static_cast<double>(cash));
+  std::string level;
+  std::string (Palette::*color)(const std::string&) const;
+  if (insolvent || q.fairPremium > 0.08 * static_cast<double>(std::max<long>(cash, 1))) {
+    level = "HIGH"; color = &Palette::red;
+  } else if (q.fairPremium > 0.02 * static_cast<double>(std::max<long>(cash, 1))) {
+    level = "MED"; color = &Palette::yellow;
+  } else {
+    level = "LOW"; color = &Palette::green;
+  }
+
   std::ostringstream os;
-  os << "advisory — P" << (mover + 1) << " (" << gs_.player(mover).name
-     << ") next roll:\n"
-     << "    expected rent liability : " << formatMoney(q.expectedRent) << "\n"
-     << "    max single-roll risk    : " << formatMoney(q.maxRent);
-  if (q.maxRentSquare >= 0)
-    os << " (" << gs_.board().at(q.maxRentSquare).name << ")";
-  os << "\n"
-     << "    mugging EV (benefit)    : " << formatMoney(q.muggingExposure) << "\n"
-     << "    fair insurance premium  : " << formatMoney(q.fairPremium) << "\n";
+  std::string title = "ADVISORY  next-to-roll: P" + std::to_string(mover + 1);
+  os << sectionHeader(title, (pal_.*color)("RISK: " + level), pal_) << "\n";
+  os << dots("Expected rent liability", 33)
+     << formatMoney(q.expectedRent) << "\n";
+  os << dots("Max single-roll risk", 33) << formatMoney(q.maxRent);
+  if (q.maxRentSquare >= 0) os << "  on " << gs_.board().at(q.maxRentSquare).name;
+  if (insolvent) os << "  " << pal_.red("[> CASH]");
+  os << "\n";
+  os << dots("Mugging expected value", 33) << "+" << formatMoney(q.muggingExposure)
+     << "  " << pal_.dim("(benefit)") << "\n";
+  os << dots("Fair insurance premium", 33) << pal_.bold(formatMoney(q.fairPremium))
+     << "\n";
+
+  if (!q.threats.empty()) {
+    os << "\n " << padRight("TOP THREATS", 32) << padLeft("LAND%", 7) << "   EXP\n";
+    int shown = 0;
+    for (const auto& t : q.threats) {
+      if (shown++ >= 3) break;
+      std::ostringstream pct; pct << (t.landProb * 100);
+      std::string name = gs_.board().at(t.square).name + " (" +
+                         std::to_string(t.square) + ")";
+      os << "  " << shown << ". " << padRight(truncate(name, 28), 29)
+         << padLeft(pct.str().substr(0, 5) + "%", 6) << "  "
+         << pal_.cyan(formatMoney(t.expectedContribution)) << "\n";
+    }
+  }
   return os.str();
 }
 
@@ -48,38 +84,61 @@ CommandResult QueryService::handle(const Command& c) const {
   std::ostringstream os;
   switch (c.query) {
     case QueryKind::State:
-      r.add(EffectKind::Query, "\n" + formatStatePanel(gs_));
+      r.add(EffectKind::Query, formatStatePanel(gs_, -1, pal_));
+      return r;
+    case QueryKind::Board:
+      r.add(EffectKind::Query, formatBoard(gs_, pal_));
       return r;
     case QueryKind::Stationary: {
       auto pi = engine_.stationaryByPosition();
-      os << "long-run landing probability (top 8):\n";
-      os << "    JAIL " << (engine_.jailProbability() * 100) << "%\n";
-      for (int p : rankTop(pi, 8))
-        os << "    " << gs_.board().at(p).name << " " << (pi[p] * 100) << "%\n";
+      double jail = engine_.jailProbability();
+      auto top = rankTop(pi, 10);
+      double maxp = top.empty() ? 1.0 : pi[top[0]];
+      os << sectionHeader("STATIONARY  long-run landing", "top 10 + JAIL", pal_) << "\n";
+      os << " " << padLeft("#", 3) << "  " << padRight("SQUARE", 26)
+         << padLeft("LAND%", 7) << "  BAR\n";
+      int rank = 0;
+      for (int p : top) {
+        ++rank;
+        std::ostringstream pct; pct << (pi[p] * 100);
+        int bars = static_cast<int>((pi[p] / maxp) * 16.0 + 0.5);
+        os << " " << padLeft(std::to_string(rank), 3) << "  "
+           << padRight(truncate(gs_.board().at(p).name, 24), 26)
+           << padLeft(pct.str().substr(0, 5) + "%", 7) << "  "
+           << pal_.cyan(std::string(static_cast<std::size_t>(bars), '#')) << "\n";
+      }
+      std::ostringstream jp; jp << (jail * 100);
+      os << " " << pal_.dim("JAIL (in-jail state, tracked separately)   ")
+         << jp.str().substr(0, 5) << "%\n";
       r.add(EffectKind::Query, os.str());
       return r;
     }
     case QueryKind::Dist: {
       if (c.player < 0 || c.player >= gs_.numPlayers()) { r.fail("unknown player"); return r; }
-      auto d = engine_.afterNRolls(gs_.player(c.player).position, std::max(1, c.count));
-      os << "P" << (c.player + 1) << " distribution after " << std::max(1, c.count)
-         << " rolls (top 6):\n";
-      for (int p : rankTop(d, 6))
-        os << "    " << gs_.board().at(p).name << " " << (d[p] * 100) << "%\n";
+      int n = std::max(1, c.count);
+      auto d = engine_.afterNRolls(gs_.player(c.player).position, n);
+      os << sectionHeader("DISTRIBUTION  P" + std::to_string(c.player + 1) + " in " +
+                              std::to_string(n) + " rolls", "top 6", pal_) << "\n";
+      for (int p : rankTop(d, 6)) {
+        std::ostringstream pct; pct << (d[p] * 100);
+        os << "  " << padRight(truncate(gs_.board().at(p).name, 26), 27)
+           << padLeft(pct.str().substr(0, 5) + "%", 7) << "\n";
+      }
       r.add(EffectKind::Query, os.str());
       return r;
     }
     case QueryKind::Risk:
     case QueryKind::Options: {
       if (c.player < 0 || c.player >= gs_.numPlayers()) { r.fail("unknown player"); return r; }
-      r.add(EffectKind::Query, "\n" + advisory(c.player));
+      r.add(EffectKind::Query, advisory(c.player));
       return r;
     }
     case QueryKind::Value: {
       if (c.posA < 0) { r.fail("query value expects @square"); return r; }
       auto pi = engine_.stationaryByPosition();
+      std::ostringstream pct; pct << (pi[c.posA] * 100);
       os << gs_.board().at(c.posA).name << ": long-run landing "
-         << (pi[c.posA] * 100) << "%";
+         << pct.str().substr(0, 5) << "%";
       r.add(EffectKind::Query, os.str());
       return r;
     }

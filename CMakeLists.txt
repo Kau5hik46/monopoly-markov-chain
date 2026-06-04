@@ -38,6 +38,7 @@ add_library(monopoly_core
   src/engine/name_table.cpp
   src/engine/lexer.cpp
   src/engine/parser.cpp
+  src/engine/help.cpp
   src/engine/formatter.cpp
   src/engine/query_service.cpp
   src/engine/executor.cpp

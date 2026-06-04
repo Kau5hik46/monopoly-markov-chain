@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -6,8 +8,8 @@
 
 #include "domain/board_factory.h"
 #include "domain/deck_factory.h"
-#include "engine/amount.h"
 #include "engine/repl.h"
+#include "engine/style.h"
 #include "probability/probability_engine.h"
 
 using namespace monopoly;
@@ -53,8 +55,11 @@ int run(const std::vector<std::string>& args) {
     return 0;
   }
 
+  engine::Palette pal;
+  pal.on = (hasFlag(args, "--color") || isatty(STDOUT_FILENO)) &&
+           !hasFlag(args, "--no-color");
   auto rules = engine::runRulesWizard(std::cin, std::cout);
-  engine::Repl repl(board, decks, rules, std::cout);
+  engine::Repl repl(board, decks, rules, std::cout, pal);
   repl.run(std::cin);
   return 0;
 }

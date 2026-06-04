@@ -6,6 +6,7 @@
 #include "domain/game_state.h"
 #include "engine/executor.h"
 #include "engine/name_table.h"
+#include "engine/style.h"
 #include "rules/rule_config.h"
 
 namespace monopoly::engine {
@@ -19,7 +20,8 @@ rules::RuleConfig runRulesWizard(std::istream& in, std::ostream& out);
 class Repl {
  public:
   Repl(const domain::Board& board, const domain::Decks& decks,
-       const rules::RuleConfig& rules, std::ostream& out);
+       const rules::RuleConfig& rules, std::ostream& out,
+       const Palette& pal = Palette{});
 
   void run(std::istream& in);
 
@@ -29,6 +31,7 @@ class Repl {
 
   const domain::Board& board_;
   rules::RuleConfig rules_;
+  Palette pal_;
   domain::GameState gs_;
   NameTable names_;
   Executor exec_;

@@ -4,6 +4,7 @@
 #include "domain/game_state.h"
 #include "engine/command.h"
 #include "engine/effect.h"
+#include "engine/style.h"
 #include "probability/landing.h"
 #include "probability/probability_engine.h"
 #include "rules/rule_config.h"
@@ -15,15 +16,16 @@ namespace monopoly::engine {
 class QueryService {
  public:
   QueryService(const domain::GameState& gs, const domain::Decks& decks,
-               const rules::RuleConfig& rules);
+               const rules::RuleConfig& rules, const Palette& pal);
 
   CommandResult handle(const Command& c) const;
-  // Risk + single-roll fair premium for `mover` (used after every command).
+  // Risk profile + single-roll fair premium for `mover` (shown after every command).
   std::string advisory(int mover) const;
 
  private:
   const domain::GameState& gs_;
   const rules::RuleConfig& rules_;
+  Palette pal_;
   probability::ProbabilityEngine engine_;
   probability::LandingResolver resolver_;
 };
