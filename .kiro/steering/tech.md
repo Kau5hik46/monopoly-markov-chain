@@ -57,6 +57,18 @@ Method (turn-resolution skeleton shared by executor & simulator), Factory
 - All randomness flows through an injected seeded RNG so sessions and tests are
   reproducible. The live tool consumes operator-provided dice, not RNG.
 
+## File size & decomposition
+- **Hard cap: no source/header file exceeds ~300–400 LoC.** A file approaching the
+  cap is a signal it does too much — split by responsibility.
+- Split guidance for the larger subsystems:
+  - `probability/transition_matrix`: separate `MicroState` indexing, dice-transition
+    assembly, and card-branching into their own files.
+  - `engine`: `Lexer`, `Parser`, each command family, `Effect`/`CommandResult`,
+    `ReadoutFormatter`, and `Repl` are separate files.
+  - `domain`: one file per entity (`square`, `title_deed`, `color_group`, `player`,
+    `bank`, `game_state`).
+  - `rules`: one file per handler.
+
 ## Tooling rules
 - Do not skip pre-commit hooks.
 - Do not add Claude as commit author/co-author.
