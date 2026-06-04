@@ -35,9 +35,10 @@ Each milestone builds and tests independently (`ctest` green) before the next st
 
 | **M8** | **Option chain (req C)** | ✅ done | `pricing::option_chain` — loss distribution + strike ladder `E[max(L-K,0)]`, `query chain Pi` | `plans/milestone-8-option-chain.md` | M4 |
 
-**Core + req C complete.** 66 tests green. Remaining designed-for extensions:
-N-roll/ruin insurance (req B/D), multi-player rule-coupled Monte-Carlo, `card`/`trade`
-DSL verbs, monopoly-aware free-parking placement.
+| **M9** | **Extensions** | ✅ done | monopoly-aware free-parking placement; `card`/`trade` verbs (incl. card money effects); N-roll/ruin forecast (req B/D, `query forecast`); turn-order enforcement (+ doubles, P1 starts); land-on-GO 2x rule; in-jail vs just-visiting mugging fix; ACTION-NEEDED prompts; save/load to disk; `@` TAB autocomplete | `plans/milestone-9-extensions.md` | M4–M8 |
+
+**All milestones + reqs A–D complete.** 78 tests green. Remaining designed-for:
+multi-player rule-coupled Monte-Carlo (currently single-player forecast).
 
 ## Cross-cutting acceptance gates (every milestone)
 - `cmake --build build && ctest --test-dir build` is green.
