@@ -25,6 +25,7 @@ add_library(monopoly_core
   src/probability/dice.cpp
   src/domain/board.cpp
   src/domain/board_factory.cpp
+  src/domain/deck_factory.cpp
 )
 target_include_directories(monopoly_core PUBLIC ${CMAKE_SOURCE_DIR}/src)
 target_compile_features(monopoly_core PUBLIC cxx_std_17)
@@ -50,10 +51,12 @@ add_executable(monopoly_tests
   tests/unit/test_matrix.cpp
   tests/unit/test_dice.cpp
   tests/unit/test_board.cpp
+  tests/unit/test_deck.cpp
 )
 target_link_libraries(monopoly_tests PRIVATE monopoly_core GTest::gtest_main)
 target_compile_definitions(monopoly_tests PRIVATE
-  BOARD_JSON_PATH="${CMAKE_SOURCE_DIR}/data/board.london.json")
+  BOARD_JSON_PATH="${CMAKE_SOURCE_DIR}/data/board.london.json"
+  DECKS_JSON_PATH="${CMAKE_SOURCE_DIR}/data/decks.london.json")
 
 include(GoogleTest)
 gtest_discover_tests(monopoly_tests)
