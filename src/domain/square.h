@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <string>
 #include <string_view>
 #include "domain/color_group.h"
@@ -19,6 +20,8 @@ struct Square {
   long price = 0;       // listed purchase price
   long houseCost = 0;   // per-house build cost (streets only)
   long mortgage = 0;    // mortgage value
+  // Street rent schedule [site, 1h, 2h, 3h, 4h, hotel]; zeros for non-streets.
+  std::array<long, 6> rent{};
 };
 
 inline bool isPurchasable(SquareType t) {

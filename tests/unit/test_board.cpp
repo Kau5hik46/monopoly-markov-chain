@@ -34,6 +34,15 @@ TEST(Board, LoadsFortySquares) {
   EXPECT_EQ(board.at(30).type, SquareType::GoToJail);
 }
 
+TEST(Board, LoadsRealRentSchedules) {
+  auto board = loadBoardFromFile(BOARD_JSON_PATH);
+  // Old-Kent-Road analog (pos 1): site £2 x10000; hotel £250 x10000.
+  EXPECT_EQ(board.at(1).rent[0], 20000);
+  EXPECT_EQ(board.at(1).rent[5], 2500000);
+  // Mayfair analog "THE CITY" (pos 39): hotel £2000 x10000.
+  EXPECT_EQ(board.at(39).rent[5], 20000000);
+}
+
 TEST(Board, FindsCardAndStationSquares) {
   auto board = loadBoardFromFile(BOARD_JSON_PATH);
   EXPECT_EQ(board.positionsOfType(SquareType::Chance),

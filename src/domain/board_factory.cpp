@@ -26,6 +26,11 @@ Board loadBoardFromFile(const std::string& path) {
     s.price = e.at("price").get<long>();
     s.houseCost = e.at("houseCost").get<long>();
     s.mortgage = e.at("mortgage").get<long>();
+    if (e.contains("rent")) {
+      const auto& r = e.at("rent");
+      for (std::size_t k = 0; k < 6 && k < r.size(); ++k)
+        s.rent[k] = r[k].get<long>();
+    }
     if (s.position < 0 || s.position >= kBoardSize)
       throw std::runtime_error("square position out of range");
     squares[static_cast<std::size_t>(s.position)] = s;
