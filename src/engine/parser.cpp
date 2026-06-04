@@ -182,11 +182,16 @@ Command parseLine(const std::string& line, const NameTable& names) {
       auto pos = names.resolve(cur.take());
       if (!pos) return invalid("card: unknown square");
       c.name = "ADVANCE"; c.posA = *pos;
+    } else if (!cur.done() && (cur.peek() == "+" || cur.peek() == "-")) {
+      const bool plus = (cur.take() == "+");  // money card: card Pi : +500K / -200K
+      auto a = cur.done() ? std::nullopt : parseAmount(cur.take());
+      if (!a) return invalid("card: bad amount");
+      c.name = "MONEY"; c.amount = *a; c.hasAmount = true; c.sign = plus;
     } else {
       if (cur.done()) return invalid("card expects an effect");
       std::string k = cur.take();
       if (k != "GO" && k != "JAIL" && k != "BACK3" && k != "STATION" && k != "UTILITY")
-        return invalid("card effect: GO|JAIL|BACK3|STATION|UTILITY or @SQ");
+        return invalid("card effect: GO|JAIL|BACK3|STATION|UTILITY|@SQ|+amt|-amt");
       c.name = k;
     }
     c.kind = CommandKind::Card; return c;

@@ -119,6 +119,15 @@ std::string formatEffects(const CommandResult& result, const Palette& pal) {
   return os.str();
 }
 
+std::string formatPrompts(const CommandResult& result, const Palette& pal) {
+  if (result.prompts.empty()) return "";
+  std::ostringstream os;
+  os << sectionHeader("ACTION NEEDED", "", pal) << "\n";
+  for (const auto& p : result.prompts)
+    os << "  " << pal.yellow("->") << " " << p << "\n";
+  return os.str();
+}
+
 std::string formatStatePanel(const domain::GameState& gs, int actingPlayer,
                              const Palette& pal) {
   std::ostringstream os;

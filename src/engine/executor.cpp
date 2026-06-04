@@ -39,37 +39,48 @@ void Executor::resolveLanding(int player, int pos, int arrivalSum, CommandResult
     r.add(EffectKind::SentToJail, "P" + std::to_string(player + 1) + " sent to JAIL");
     return;
   }
-  // Rent to an opponent owner.
+  const std::string P = "P" + std::to_string(player + 1);
+  // Rent to an opponent owner, or a buy opportunity on an unowned property.
   if (domain::isPurchasable(sq.type)) {
     const int owner = gs_.ownerOf(pos);
-    if (owner != domain::kUnowned && owner != player && !gs_.isMortgaged(pos)) {
+    if (owner == domain::kUnowned) {
+      r.prompt("buy " + P + " @#" + std::to_string(pos) + "   (" + sq.name + ", " +
+               formatMoney(static_cast<double>(sq.price)) + ")  — or skip");
+    } else if (owner != player && !gs_.isMortgaged(pos)) {
       long rent = risk::rentOwed(gs_, pos, player, arrivalSum);
       gs_.player(player).cash -= rent;
       gs_.player(owner).cash += rent;
-      r.add(EffectKind::RentPaid, "P" + std::to_string(player + 1) + " pays rent " +
+      r.add(EffectKind::RentPaid, P + " pays rent " +
                                       formatMoney(static_cast<double>(rent)) + " to P" +
                                       std::to_string(owner + 1));
     }
+    // Optional airport travel from an owned airport (needs >= 2 owned airports).
+    if (sq.type == SquareType::Station && owner == player &&
+        rules_.airportTravelEnabled &&
+        gs_.countOwnedInGroup(player, domain::ColorGroup::Station) >= 2) {
+      r.prompt("airport " + P + " @#" + std::to_string(pos) +
+               " -> @<otherOwnedAirport>   (optional, skips next turn)");
+    }
   }
-  // Mugging opportunity.
+  // Mugging opportunity (in-jail players are excluded by occupantAt).
   if (rules_.muggingEnabled && rules::isMuggingEligible(sq.type)) {
     int occ = gs_.occupantAt(pos, /*exclude=*/player);
     if (occ != domain::kUnowned) {
-      r.add(EffectKind::Mugging,
-            "MUGGING: P" + std::to_string(player + 1) + " vs P" +
-                std::to_string(occ + 1) + " — enter 'mug P" +
-                std::to_string(player + 1) + " vs P" + std::to_string(occ + 1) +
-                " = a:b'");
+      r.add(EffectKind::Mugging, "MUGGING: " + P + " lands on P" +
+                                     std::to_string(occ + 1) + " — contest required");
+      r.prompt("mug " + P + " vs P" + std::to_string(occ + 1) +
+               " = <muggerTotal>:<muggeeTotal>");
     }
   }
-  if (sq.type == SquareType::IncomeTax || sq.type == SquareType::SuperTax)
-    r.add(EffectKind::Info, "tax square — record with 'tax'");
+  if (sq.type == SquareType::IncomeTax)
+    r.prompt("tax " + P + " = <amount> @INCOME");
+  if (sq.type == SquareType::SuperTax)
+    r.prompt("tax " + P + " = <amount> @SUPER");
   if (sq.type == SquareType::Chance || sq.type == SquareType::CommunityChest)
-    r.add(EffectKind::Info, "drew a card — apply its effect with move/cash/jail");
+    r.prompt("card " + P + " : GO|JAIL|BACK3|STATION|UTILITY|@SQ|+amt|-amt");
   if (sq.type == SquareType::FreeParking && gs_.freeParkingPot() > 0)
-    r.add(EffectKind::Info, "free parking has " +
-                                std::to_string(gs_.freeParkingPot()) +
-                                " houses — 'claim' them");
+    r.prompt("claim " + P + "   (free-parking pot: " +
+             std::to_string(gs_.freeParkingPot()) + " houses)");
 }
 
 CommandResult Executor::execute(const Command& c) {
@@ -107,10 +118,16 @@ CommandResult Executor::execute(const Command& c) {
       r.add(EffectKind::Info, "started game with " + std::to_string(c.count) +
                                   " players, each " + formatMoney(kStartingCash));
       lastMover_ = 0;
+      nextRoller_ = 0;  // P1 rolls first
       break;
     }
     case CommandKind::Roll: {
       if (!validPlayer(c.player, r)) break;
+      if (c.player != nextRoller_) {
+        r.fail("out of turn — it is P" + std::to_string(nextRoller_ + 1) +
+               "'s roll (use that, or 'cash'/'jail' to correct state)");
+        break;
+      }
       auto& pl = gs_.player(c.player);
       const int sum = c.die1 + c.die2;
       const bool dbl = (c.die1 == c.die2);
@@ -133,6 +150,7 @@ CommandResult Executor::execute(const Command& c) {
                                         " stays in jail (attempt " +
                                         std::to_string(pl.jailAttempts) + ")");
             lastMover_ = c.player;
+            nextRoller_ = (c.player + 1) % gs_.numPlayers();
             break;
           }
         }
@@ -143,6 +161,7 @@ CommandResult Executor::execute(const Command& c) {
           r.add(EffectKind::SentToJail,
                 "P" + std::to_string(c.player + 1) + " — third double, off to JAIL");
           lastMover_ = c.player;
+          nextRoller_ = (c.player + 1) % gs_.numPlayers();
           break;
         }
       } else if (!dbl) {
@@ -162,11 +181,22 @@ CommandResult Executor::execute(const Command& c) {
                                       " passes GO, collects " +
                                       formatMoney(rules_.passGoBonus));
       }
+      // House rule: landing exactly on GO pays the salary a second time (2x total).
+      if (pl.position == 0 && rules_.landOnGoDoubles) {
+        pl.cash += rules_.passGoBonus;
+        r.add(EffectKind::PassGo, "P" + std::to_string(c.player + 1) +
+                                      " lands on GO — double salary, +" +
+                                      formatMoney(rules_.passGoBonus));
+      }
       const bool inJailBefore = pl.inJail;
       resolveLanding(c.player, pl.position, sum, r);
-      if (dbl && !pl.inJail && !inJailBefore)
+      const bool rollsAgain = dbl && !pl.inJail && !inJailBefore;
+      if (rollsAgain) {
         r.add(EffectKind::Double, "rolled a double — roll again");
+        r.prompt("roll P" + std::to_string(c.player + 1) + " = d1,d2   (rolls again)");
+      }
       lastMover_ = c.player;
+      nextRoller_ = rollsAgain ? c.player : (c.player + 1) % gs_.numPlayers();
       break;
     }
     case CommandKind::Buy: {
@@ -336,6 +366,15 @@ CommandResult Executor::execute(const Command& c) {
         pl.position = 10; pl.inJail = true; pl.consecutiveDoubles = 0;
         r.add(EffectKind::SentToJail,
               "P" + std::to_string(c.player + 1) + " card: go to JAIL");
+        lastMover_ = c.player;
+        break;
+      }
+      if (c.name == "MONEY") {
+        const long delta = c.sign ? c.amount : -c.amount;
+        pl.cash += delta;
+        r.add(EffectKind::CashTransfer, "P" + std::to_string(c.player + 1) +
+                                            " card: " + (c.sign ? "+" : "-") +
+                                            formatMoney(static_cast<double>(c.amount)));
         lastMover_ = c.player;
         break;
       }

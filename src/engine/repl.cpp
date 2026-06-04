@@ -27,9 +27,12 @@ rules::RuleConfig runRulesWizard(std::istream& in, std::ostream& out) {
   c.muggingEnabled = askYesNo(in, out, "Enable mugging?", true);
   c.airportTravelEnabled = askYesNo(in, out, "Enable airport travel?", true);
   c.freeParkingPotEnabled = askYesNo(in, out, "Enable free-parking house pot?", true);
+  c.landOnGoDoubles = askYesNo(in, out, "Double salary for landing exactly on GO?", true);
   out << "Rules: mugging=" << (c.muggingEnabled ? "on" : "off")
       << " airport=" << (c.airportTravelEnabled ? "on" : "off")
-      << " free-parking-pot=" << (c.freeParkingPotEnabled ? "on" : "off") << "\n\n";
+      << " free-parking-pot=" << (c.freeParkingPotEnabled ? "on" : "off")
+      << " 2x-on-GO=" << (c.landOnGoDoubles ? "on" : "off")
+      << "  (pass-GO salary " << c.passGoBonus << ")\n\n";
   return c;
 }
 
@@ -43,13 +46,12 @@ void Repl::render(const std::string& line, const CommandResult& result,
   // Interactively the terminal already shows the typed line; only echo when piped.
   if (!pal_.on) out_ << formatEcho(line, result.ok, pal_);
   out_ << formatEffects(result, pal_);
+  out_ << formatPrompts(result, pal_);
   const bool showPanel = result.ok && gs_.numPlayers() > 0 &&
                          kind != CommandKind::Query && kind != CommandKind::Help;
   if (showPanel) {
     out_ << formatStatePanel(gs_, exec_.lastMover(), pal_);
-    const int n = gs_.numPlayers();
-    const int next = (exec_.lastMover() >= 0) ? (exec_.lastMover() + 1) % n : 0;
-    out_ << "\n" << exec_.queries().advisory(next);
+    out_ << "\n" << exec_.queries().advisory(exec_.nextRoller());
   }
   out_ << "\n";
   out_.flush();

@@ -41,8 +41,9 @@ RollQuote priceNextRoll(const domain::GameState& gs, int mover,
         if (cfg.muggingEnabled) {
           const int occ = gs.occupantAt(lp.position, /*exclude=*/mover);
           const auto& sq = gs.board().at(lp.position);
-          const bool eligible = sq.type != domain::SquareType::Jail &&
-                                sq.type != domain::SquareType::FreeParking;
+          // Only Free Parking is mugging-exempt; in-jail players already excluded by
+          // occupantAt, so a just-visiting player on the Jail square is muggable.
+          const bool eligible = sq.type != domain::SquareType::FreeParking;
           if (occ != domain::kUnowned && eligible)
             q.muggingExposure += w * (pMuggerWins * static_cast<double>(cfg.muggingAmount));
         }

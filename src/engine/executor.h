@@ -21,7 +21,8 @@ class Executor {
            rules::RuleConfig& rules, const Palette& pal = Palette{});
 
   CommandResult execute(const Command& c);
-  int lastMover() const { return lastMover_; }
+  int lastMover() const { return lastMover_; }       // last player to act (for '*')
+  int nextRoller() const { return nextRoller_; }      // whose turn to roll next
   const QueryService& queries() const { return query_; }
 
  private:
@@ -35,6 +36,7 @@ class Executor {
   QueryService query_;
   std::vector<domain::GameState> history_;
   int lastMover_ = -1;
+  int nextRoller_ = 0;
 };
 
 }  // namespace monopoly::engine

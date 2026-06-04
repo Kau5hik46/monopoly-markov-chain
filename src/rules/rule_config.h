@@ -26,6 +26,7 @@ struct RuleConfig {
 
   // Economy.
   long passGoBonus = 2000000;
+  bool landOnGoDoubles = true;  // landing exactly on GO pays the salary twice
 };
 
 // Fluent builder (Builder pattern).

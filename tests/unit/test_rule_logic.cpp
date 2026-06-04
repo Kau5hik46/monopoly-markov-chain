@@ -22,9 +22,9 @@ TEST(RuleLogic, FreeParkingHousesPerTax) {
   EXPECT_EQ(freeParkingHousesForTax(SquareType::IncomeTax, cfg), 0);
 }
 
-TEST(RuleLogic, MuggingEligibilityExcludesJailAndFreeParking) {
+TEST(RuleLogic, MuggingEligibilityExcludesOnlyFreeParking) {
   EXPECT_TRUE(isMuggingEligible(SquareType::Street));
-  EXPECT_FALSE(isMuggingEligible(SquareType::Jail));
+  EXPECT_TRUE(isMuggingEligible(SquareType::Jail));  // just-visiting is muggable
   EXPECT_FALSE(isMuggingEligible(SquareType::FreeParking));
 }
 

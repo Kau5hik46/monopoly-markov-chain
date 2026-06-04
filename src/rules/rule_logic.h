@@ -16,9 +16,12 @@ inline MuggingResult resolveMugging(int muggerSum, int muggeeSum) {
 // Houses added to the Free-Parking pot when a tax is paid to the bank.
 int freeParkingHousesForTax(domain::SquareType taxType, const RuleConfig& cfg);
 
-// Mugging happens everywhere except Jail and Free Parking.
+// Mugging can happen on any square except Free Parking (the "hospital" safe zone).
+// The Jail square is NOT exempt: a player just-visiting can be mugged. Players who
+// are actually incarcerated are excluded separately (GameState::occupantAt skips
+// in-jail players), so they can never be a mugging target.
 inline bool isMuggingEligible(domain::SquareType t) {
-  return t != domain::SquareType::Jail && t != domain::SquareType::FreeParking;
+  return t != domain::SquareType::FreeParking;
 }
 
 // Airport travel is legal only between two distinct airports both owned by `player`.

@@ -10,5 +10,6 @@
   "respectHouseSupply": true,
   "jailMaxAttempts": 3,
   "jailFine": 500000,
-  "passGoBonus": 2000000
+  "passGoBonus": 2000000,
+  "landOnGoDoubles": true
 }

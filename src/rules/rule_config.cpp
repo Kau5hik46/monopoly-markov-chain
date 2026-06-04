@@ -30,6 +30,7 @@ RuleConfig loadRuleConfig(const std::string& path) {
   if (j.contains("jailMaxAttempts")) c.jailMaxAttempts = j["jailMaxAttempts"].get<int>();
   if (j.contains("jailFine")) c.jailFine = j["jailFine"].get<long>();
   if (j.contains("passGoBonus")) c.passGoBonus = j["passGoBonus"].get<long>();
+  if (j.contains("landOnGoDoubles")) c.landOnGoDoubles = j["landOnGoDoubles"].get<bool>();
   return c;
 }
 
