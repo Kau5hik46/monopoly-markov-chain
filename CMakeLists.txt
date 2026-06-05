@@ -93,6 +93,7 @@ add_executable(monopoly_tests
   tests/unit/test_options_dsl.cpp
   tests/unit/test_options_exec.cpp
   tests/unit/test_options_log.cpp
+  tests/unit/test_options_session.cpp
   tests/unit/test_engine_exec.cpp
   tests/unit/test_engine_repl.cpp
   tests/unit/test_monte_carlo.cpp

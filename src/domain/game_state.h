@@ -98,7 +98,7 @@ class GameState {
   const std::vector<OptionContract>& contracts() const { return contracts_; }
   std::vector<LedgerEntry>& ledger() { return ledger_; }
   const std::vector<LedgerEntry>& ledger() const { return ledger_; }
-  int nextContractId() { return nextContractId_; }            // peek next id
+  int nextContractId() const { return nextContractId_; }      // peek next id
   void addContract(OptionContract c) {                        // assigns + bumps id
     if (c.id == 0) c.id = nextContractId_;
     if (c.id >= nextContractId_) nextContractId_ = c.id + 1;

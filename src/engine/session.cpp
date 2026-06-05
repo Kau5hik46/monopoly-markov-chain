@@ -67,6 +67,27 @@ void saveGame(const domain::GameState& gs, const rules::RuleConfig& rules,
   j["houses"] = houses;
   j["mortgaged"] = mort;
 
+  json contracts = json::array();
+  for (const auto& c : gs.contracts())
+    contracts.push_back({{"id", c.id}, {"writer", c.writer}, {"holder", c.holder},
+                         {"insured", c.insured}, {"type", static_cast<int>(c.type)},
+                         {"underlying", static_cast<int>(c.underlying)},
+                         {"strike", c.strike}, {"premium", c.premium},
+                         {"escrow", c.escrow}, {"status", static_cast<int>(c.status)},
+                         {"realizedValue", c.realizedValue}, {"landers", c.landers},
+                         {"landersRolled", c.landersRolled}});
+  j["contracts"] = contracts;
+  j["nextContractId"] = gs.nextContractId();
+
+  json ledger = json::array();
+  for (const auto& e : gs.ledger())
+    ledger.push_back({{"id", e.id}, {"writer", e.writer}, {"holder", e.holder},
+                      {"insured", e.insured}, {"type", static_cast<int>(e.type)},
+                      {"underlying", static_cast<int>(e.underlying)},
+                      {"strike", e.strike}, {"premium", e.premium},
+                      {"escrow", e.escrow}, {"payout", e.payout}});
+  j["ledger"] = ledger;
+
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write save file: " + path);
   out << j.dump(2) << "\n";
@@ -98,6 +119,35 @@ void loadGame(domain::GameState& gs, rules::RuleConfig& rules, int& nextRoller,
   fresh.setFreeParkingPot(j.value("freeParkingPot", 0));
   fresh.bank().housesAvailable = j.at("bank").value("houses", domain::kHouseSupply);
   fresh.bank().hotelsAvailable = j.at("bank").value("hotels", domain::kHotelSupply);
+
+  if (j.contains("contracts")) {
+    for (const auto& jc : j.at("contracts")) {
+      domain::OptionContract c;
+      c.id = jc.at("id"); c.writer = jc.at("writer"); c.holder = jc.at("holder");
+      c.insured = jc.at("insured");
+      c.type = static_cast<domain::OptionType>(jc.at("type").get<int>());
+      c.underlying = static_cast<domain::Underlying>(jc.at("underlying").get<int>());
+      c.strike = jc.at("strike"); c.premium = jc.at("premium"); c.escrow = jc.at("escrow");
+      c.status = static_cast<domain::ContractStatus>(jc.at("status").get<int>());
+      c.realizedValue = jc.at("realizedValue");
+      c.landers = jc.at("landers").get<std::vector<int>>();
+      c.landersRolled = jc.at("landersRolled");
+      fresh.addContract(c);
+    }
+  }
+  if (j.contains("nextContractId")) fresh.setNextContractId(j.at("nextContractId").get<int>());
+  if (j.contains("ledger")) {
+    for (const auto& je : j.at("ledger")) {
+      domain::LedgerEntry e;
+      e.id = je.at("id"); e.writer = je.at("writer"); e.holder = je.at("holder");
+      e.insured = je.at("insured");
+      e.type = static_cast<domain::OptionType>(je.at("type").get<int>());
+      e.underlying = static_cast<domain::Underlying>(je.at("underlying").get<int>());
+      e.strike = je.at("strike"); e.premium = je.at("premium");
+      e.escrow = je.at("escrow"); e.payout = je.at("payout");
+      fresh.ledger().push_back(e);
+    }
+  }
 
   gs = fresh;
   if (j.contains("rules")) ruleFromJson(j.at("rules"), rules);
