@@ -1,6 +1,8 @@
 #include "engine/repl.h"
 
+#include <fstream>
 #include <string>
+#include "engine/completion.h"
 #include "engine/formatter.h"
 #include "engine/line_reader.h"
 #include "engine/parser.h"
@@ -80,8 +82,35 @@ void Repl::run(std::istream& in) {
       out_ << "bye\n";
       break;
     }
+    if (cmd.kind == CommandKind::Log) {  // session journal — not a game command
+      const int n = cmd.count;
+      const int total = static_cast<int>(journal_.size());
+      const int start = (n > 0 && n < total) ? total - n : 0;
+      for (int i = start; i < total; ++i) {
+        const auto& e = journal_[static_cast<std::size_t>(i)];
+        out_ << "[" << e.seq << "] " << e.command << "\n";
+        for (const auto& t : e.effects) out_ << "    " << t << "\n";
+      }
+      out_.flush();
+      continue;
+    }
     CommandResult result = exec_.execute(cmd);
     render(line, result, cmd.kind);
+
+    // Journal the executed command + its effect texts; append to the session log file.
+    JournalEntry je;
+    je.seq = ++seq_;
+    je.command = line;
+    for (const auto& e : result.effects) je.effects.push_back(e.text);
+    journal_.push_back(je);
+    {
+      std::ofstream f(logPath_, std::ios::app);
+      if (f) {
+        f << "[" << je.seq << "] " << je.command << "\n";
+        for (const auto& t : je.effects) f << "    " << t << "\n";
+      }
+    }
+
     lastActions.clear();
     for (const auto& p : result.prompts) lastActions.push_back(cleanPrompt(p));
   }
