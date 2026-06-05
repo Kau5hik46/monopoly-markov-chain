@@ -74,3 +74,34 @@ TEST(OptionsDsl, QueryLedger) {
   EXPECT_EQ(c.kind, CommandKind::Query);
   EXPECT_EQ(c.query, QueryKind::Ledger);
 }
+
+TEST(OptionsDsl, InsureIncomeCall) {
+  auto c = parseLine("insure P1 call income P2 strike 1M", names());
+  EXPECT_EQ(c.kind, CommandKind::Insure);
+  EXPECT_EQ(c.player, 0);
+  EXPECT_TRUE(c.isIncome);
+  EXPECT_EQ(c.insured, 1);     // owner P2
+  EXPECT_TRUE(c.hasStrike);
+}
+
+TEST(OptionsDsl, WriteIncomeWithLanders) {
+  auto c = parseLine("write P2 -> P1 call income P3 strike 2M premium 1M landers P3 P4",
+                     names());
+  EXPECT_EQ(c.kind, CommandKind::Write);
+  EXPECT_EQ(c.player, 1);      // writer P2
+  EXPECT_EQ(c.player2, 0);     // holder P1
+  EXPECT_TRUE(c.isIncome);
+  EXPECT_EQ(c.insured, 2);     // owner P3
+  ASSERT_EQ(c.landers.size(), 2u);
+  EXPECT_EQ(c.landers[0], 2);  // P3
+  EXPECT_EQ(c.landers[1], 3);  // P4
+}
+
+TEST(OptionsDsl, LiabilityParsingStillWorks) {
+  auto c = parseLine("write P2 -> P1 put strike 200K premium 1M", names());
+  EXPECT_EQ(c.kind, CommandKind::Write);
+  EXPECT_FALSE(c.isIncome);
+  EXPECT_TRUE(c.isPut);
+  EXPECT_EQ(c.insured, 0);     // defaults to holder
+  EXPECT_TRUE(c.landers.empty());
+}
