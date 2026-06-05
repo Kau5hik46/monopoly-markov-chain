@@ -36,6 +36,7 @@ add_library(monopoly_core
   src/risk/game_sim.cpp
   src/pricing/insurance_pricer.cpp
   src/pricing/option_chain.cpp
+  src/contracts/option_book.cpp
   src/rules/rule_config.cpp
   src/rules/rule_logic.cpp
   src/engine/name_table.cpp
@@ -94,6 +95,7 @@ add_executable(monopoly_tests
   tests/unit/test_monte_carlo.cpp
   tests/unit/test_option_chain.cpp
   tests/unit/test_pricing_strike.cpp
+  tests/unit/test_option_book.cpp
   tests/unit/test_forecast.cpp
   tests/unit/test_game_sim.cpp
 )
