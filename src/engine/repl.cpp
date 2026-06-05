@@ -61,10 +61,13 @@ void Repl::render(const std::string& line, const CommandResult& result,
 void Repl::run(std::istream& in) {
   out_ << "Monopoly Markov Advisor — London edition.  Type 'help' or 'quit'.\n\n";
   std::string line;
+  std::vector<std::string> lastActions;  // cleaned recommended actions for TAB completion
   while (true) {
     bool got;
-    if (pal_.on) {  // interactive TTY: raw-mode reader with @-autocomplete
-      got = readInteractiveLine(names_, "monopoly> ", line, out_);
+    if (pal_.on) {  // interactive TTY: raw-mode reader with command-aware autocomplete
+      CompletionModel model =
+          makeCompletionModel(names_, gs_.numPlayers(), lastActions);
+      got = readInteractiveLine(model, "monopoly> ", line, out_);
     } else {
       out_ << "monopoly> ";
       out_.flush();
@@ -79,6 +82,8 @@ void Repl::run(std::istream& in) {
     }
     CommandResult result = exec_.execute(cmd);
     render(line, result, cmd.kind);
+    lastActions.clear();
+    for (const auto& p : result.prompts) lastActions.push_back(cleanPrompt(p));
   }
 }
 
