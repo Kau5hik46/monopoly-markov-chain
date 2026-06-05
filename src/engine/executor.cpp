@@ -54,6 +54,7 @@ void Executor::resolveLanding(int player, int pos, int arrivalSum, CommandResult
       gs_.player(player).cash -= rent;
       gs_.player(owner).cash += rent;
       lastRentPaid_ = rent;  // captured for single-roll option maturity
+      lastRentOwner_ = owner;  // who received it (income accumulation)
       r.add(EffectKind::RentPaid, P + " pays rent " +
                                       formatMoney(static_cast<double>(rent)) + " to P" +
                                       std::to_string(owner + 1));
@@ -130,6 +131,12 @@ CommandResult Executor::execute(const Command& c) {
       break;
   }
 
+  // Turn-aware income maturity: when the owner is genuinely about to roll again, their
+  // open income options close their round window and mature. Done BEFORE snapshot so the
+  // gate's rollback below preserves the maturation (the gate then blocks this roll).
+  if (c.kind == CommandKind::Roll && c.player == nextRoller_)
+    contracts::matureIncomeOnOwnerTurn(gs_, c.player);
+
   snapshot();  // mutating commands from here
 
   // No-forget settlement gate: a matured contract must be settled before any other
@@ -154,7 +161,7 @@ CommandResult Executor::execute(const Command& c) {
     }
     case CommandKind::Roll: {
       if (!validPlayer(c.player, r)) break;
-      lastRentPaid_ = 0;  // reset; resolveLanding sets it if rent is paid this roll
+      lastRentPaid_ = 0; lastRentOwner_ = -1;  // reset; resolveLanding sets if rent paid
       if (c.player != nextRoller_) {
         r.fail("out of turn — it is P" + std::to_string(nextRoller_ + 1) +
                "'s roll (use that, or 'cash'/'jail' to correct state)");
@@ -456,12 +463,17 @@ CommandResult Executor::execute(const Command& c) {
       int insured = (c.insured >= 0) ? c.insured : c.player;
       if (!validPlayer(insured, r)) break;
       const auto type = c.isPut ? domain::OptionType::Put : domain::OptionType::Call;
-      auto res = contracts::openBank(gs_, c.player, insured, type, c.strike, resolver_);
+      auto res = c.isIncome
+                     ? contracts::openIncomeBank(gs_, c.player, insured, type, c.strike,
+                                                 c.landers, resolver_)
+                     : contracts::openBank(gs_, c.player, insured, type, c.strike,
+                                           resolver_);
       if (!res.ok) { r.fail(res.error); break; }
       r.add(EffectKind::Info, "P" + std::to_string(c.player + 1) + " bought " +
-            (c.isPut ? "PUT" : "CALL") + " on P" + std::to_string(insured + 1) +
-            " (bank) #" + std::to_string(res.contractId) + " strike " +
-            formatMoney(c.strike) + " premium " + formatMoney(res.premium));
+            (c.isPut ? "PUT" : "CALL") + (c.isIncome ? " on income(P" : " on P") +
+            std::to_string(insured + 1) + ")" + " (bank) #" +
+            std::to_string(res.contractId) + " strike " + formatMoney(c.strike) +
+            " premium " + formatMoney(res.premium));
       break;
     }
     case CommandKind::Write: {
@@ -469,12 +481,16 @@ CommandResult Executor::execute(const Command& c) {
       int insured = (c.insured >= 0) ? c.insured : c.player2;
       if (!validPlayer(insured, r)) break;
       const auto type = c.isPut ? domain::OptionType::Put : domain::OptionType::Call;
-      auto res = contracts::openPeer(gs_, c.player, c.player2, insured, type, c.strike,
-                                     c.premium, resolver_);
+      auto res = c.isIncome
+                     ? contracts::openIncomePeer(gs_, c.player, c.player2, insured, type,
+                                                 c.strike, c.premium, c.landers, resolver_)
+                     : contracts::openPeer(gs_, c.player, c.player2, insured, type,
+                                           c.strike, c.premium, resolver_);
       if (!res.ok) { r.fail(res.error); break; }
       r.add(EffectKind::Info, "P" + std::to_string(c.player + 1) + " wrote " +
-            (c.isPut ? "PUT" : "CALL") + " to P" + std::to_string(c.player2 + 1) +
-            " on P" + std::to_string(insured + 1) + " #" + std::to_string(res.contractId) +
+            (c.isPut ? "PUT" : "CALL") + (c.isIncome ? " on income(P" : " to P") +
+            std::to_string(c.isIncome ? insured + 1 : c.player2 + 1) +
+            (c.isIncome ? ")" : "") + " #" + std::to_string(res.contractId) +
             " premium " + formatMoney(res.premium) + " (fair " +
             formatMoney(res.fairValue) + ") escrow " + formatMoney(res.escrow));
       break;
@@ -501,6 +517,11 @@ CommandResult Executor::execute(const Command& c) {
       r.fail("command not implemented");
       break;
   }
+  // Income accumulation: the rent this roll paid to an owner feeds open income options
+  // on that owner whose lander set includes the roller.
+  if (r.ok && c.kind == CommandKind::Roll && lastRentPaid_ > 0 && lastRentOwner_ >= 0)
+    contracts::accumulateIncome(gs_, lastRentOwner_, c.player, lastRentPaid_);
+
   // Mature single-roll liability options on the player who just rolled (any roll
   // outcome, including a roll that pays no rent or sends to jail -> realizedValue 0).
   if (r.ok && c.kind == CommandKind::Roll && contracts::hasOpenOn(gs_, c.player)) {

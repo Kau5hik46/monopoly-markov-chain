@@ -82,3 +82,29 @@ TEST(OptionsExec, UndoReversesOpenAndContract) {
   EXPECT_EQ(h.gs.player(0).cash, cash0);     // premium restored
   EXPECT_TRUE(h.gs.contracts().empty());     // contract gone
 }
+
+TEST(OptionsExec, IncomeOptionAccumulatesMaturesAtOwnerTurnAndSettles) {
+  Harness h;
+  ASSERT_TRUE(h.run("init 1").ok);            // add P3 (now 3 players)
+  h.gs.player(2).cash = 50000000;             // fund the writer P3 to cover escrow
+  // P3 writes a CALL on P2's income to holder P2 (owner hedges own income); lander = P1.
+  ASSERT_TRUE(h.run("write P3 -> P2 call income P2 strike 0 premium 100K landers P1").ok);
+  ASSERT_EQ(h.gs.contracts().size(), 1u);
+  EXPECT_EQ(h.gs.contracts()[0].underlying, domain::Underlying::Income);
+
+  long holderBefore = h.gs.player(1).cash;    // P2 cash after paying premium
+  // P1 rolls 18 -> 24 (2+4) onto P2's hotel and pays rent to P2.
+  auto roll1 = h.run("roll P1 = 2,4");
+  EXPECT_TRUE(roll1.ok);
+  EXPECT_GT(h.gs.contracts()[0].realizedValue, 0);   // income accumulated
+  EXPECT_FALSE(contracts::hasMatured(h.gs));          // not until owner's turn
+
+  // It is now P2's (owner) turn — the income option matures and the gate blocks the roll.
+  auto roll2 = h.run("roll P2 = 1,2");
+  EXPECT_FALSE(roll2.ok);
+  EXPECT_TRUE(contracts::hasMatured(h.gs));
+
+  auto s = h.run("settle all");
+  EXPECT_TRUE(s.ok);
+  EXPECT_GT(h.gs.player(1).cash, holderBefore);       // P2 received rent + option payout
+}

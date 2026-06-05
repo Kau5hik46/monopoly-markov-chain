@@ -40,6 +40,7 @@ class Executor {
   int lastMover_ = -1;
   int nextRoller_ = 0;
   long lastRentPaid_ = 0;  // rent paid in the most recent resolveLanding (for maturity)
+  int lastRentOwner_ = -1;  // who received that rent (for income accumulation)
 };
 
 }  // namespace monopoly::engine
