@@ -55,7 +55,15 @@ std::string manPage(const Palette& pal) {
     << "    query simulate ^N           coupled Monte-Carlo: all players, N rounds (ruin/cash)\n"
     << "    query dist Pi ^n            landing distribution n rolls ahead\n"
     << "    query stationary            long-run landing probabilities\n"
-    << "    query value @SQ             long-run landing probability for one square\n\n";
+    << "    query value @SQ             long-run landing probability for one square\n"
+    << "    query ledger                option premiums, escrow, payouts, net P&L\n\n";
+
+  o << sec("OPTIONS", pal) << "\n"
+    << "    insure Pi [call|put] [Pj] [strike K]   buy fair-priced next-roll insurance\n"
+    << "                                from the bank (default call; Pj defaults to Pi)\n"
+    << "    write Pw -> Ph [call|put] [Pj] [strike K] premium P   peer-write an option;\n"
+    << "                                escrow is locked from Pw (no-default guarantee)\n"
+    << "    settle <id> | settle all    settle matured option(s) — required before play continues\n\n";
 
   o << sec("RULES", pal) << "\n"
     << "    rules <mugging|airport|pot> on|off    toggle a house rule mid-game\n\n";
@@ -63,6 +71,7 @@ std::string manPage(const Palette& pal) {
   o << sec("CONTROL", pal) << "\n"
     << "    save FILE                   write the game state to FILE (JSON)\n"
     << "    load FILE                   restore a game state from FILE\n"
+    << "    log [N]                     show the session command/effect journal (last N)\n"
     << "    undo                        revert the last command\n"
     << "    help                        show this page\n"
     << "    quit                        exit\n\n";

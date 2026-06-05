@@ -63,3 +63,12 @@ TEST(OptionsExec, RollMaturesOpenContractOnInsured) {
   h.run("roll P1 = 3,3");
   EXPECT_TRUE(contracts::hasMatured(h.gs));
 }
+
+TEST(OptionsExec, QueryLedgerListsSettledAndOpen) {
+  Harness h;
+  ASSERT_TRUE(h.run("insure P1 strike 0").ok);
+  auto r = h.run("query ledger");
+  EXPECT_TRUE(r.ok);
+  ASSERT_FALSE(r.effects.empty());
+  EXPECT_NE(r.effects.front().text.find("P1"), std::string::npos);  // open row shown
+}

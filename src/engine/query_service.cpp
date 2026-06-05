@@ -212,6 +212,42 @@ CommandResult QueryService::handle(const Command& c) const {
       r.add(EffectKind::Query, os.str());
       return r;
     }
+    case QueryKind::Ledger: {
+      auto writerLabel = [](int w) {
+        return w == domain::kUnowned ? std::string("BANK") : "P" + std::to_string(w + 1);
+      };
+      auto typeLabel = [](domain::OptionType t) {
+        return t == domain::OptionType::Put ? "PUT" : "CALL";
+      };
+      os << sectionHeader("OPTION LEDGER", "contracts & P&L", pal_) << "\n";
+      os << " open / matured:\n";
+      bool anyOpen = false;
+      for (const auto& ct : gs_.contracts()) {
+        if (ct.status == domain::ContractStatus::Settled) continue;
+        anyOpen = true;
+        os << "   #" << ct.id << "  P" << (ct.holder + 1) << " <- " << writerLabel(ct.writer)
+           << "  " << typeLabel(ct.type) << " on P" << (ct.insured + 1)
+           << "  K=" << formatMoney(ct.strike) << " prem=" << formatMoney(ct.premium)
+           << " escrow=" << formatMoney(ct.escrow)
+           << (ct.status == domain::ContractStatus::Matured ? "  [MATURED]" : "") << "\n";
+      }
+      if (!anyOpen) os << "   (none)\n";
+      os << " settled:\n";
+      std::vector<long> net(static_cast<std::size_t>(std::max(1, gs_.numPlayers())), 0);
+      for (const auto& e : gs_.ledger()) {
+        os << "   #" << e.id << "  " << typeLabel(e.type) << "  payout "
+           << formatMoney(e.payout) << " (prem " << formatMoney(e.premium) << ")\n";
+        net[static_cast<std::size_t>(e.holder)] += e.payout - e.premium;
+        if (e.writer != domain::kUnowned)
+          net[static_cast<std::size_t>(e.writer)] += e.premium - e.payout;
+      }
+      if (gs_.ledger().empty()) os << "   (none)\n";
+      os << " net P&L:";
+      for (int p = 0; p < gs_.numPlayers(); ++p)
+        os << "  P" << (p + 1) << " " << formatMoney(net[static_cast<std::size_t>(p)]);
+      r.add(EffectKind::Query, os.str());
+      return r;
+    }
   }
   r.fail("unhandled query");
   return r;
