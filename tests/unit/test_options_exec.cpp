@@ -72,3 +72,13 @@ TEST(OptionsExec, QueryLedgerListsSettledAndOpen) {
   ASSERT_FALSE(r.effects.empty());
   EXPECT_NE(r.effects.front().text.find("P1"), std::string::npos);  // open row shown
 }
+
+TEST(OptionsExec, UndoReversesOpenAndContract) {
+  Harness h;
+  long cash0 = h.gs.player(0).cash;
+  ASSERT_TRUE(h.run("insure P1 strike 0").ok);
+  EXPECT_LT(h.gs.player(0).cash, cash0);     // premium left
+  ASSERT_TRUE(h.run("undo").ok);
+  EXPECT_EQ(h.gs.player(0).cash, cash0);     // premium restored
+  EXPECT_TRUE(h.gs.contracts().empty());     // contract gone
+}

@@ -40,7 +40,7 @@ Each milestone builds and tests independently (`ctest` green) before the next st
 | **M10** | **Coupled Monte-Carlo** | ✅ done | `risk::game_sim` — multi-player forward simulation with mugging coupling; `query simulate ^N` (per-player ruin / cash / robbed) | — | M5,M9 |
 
 | **M12** | **REPL autocomplete** | ✅ done | command-aware TAB completion: verbs, context operands (players/keywords/query subs), `@`square, and empty-line cycling of recommended actions (Shift-TAB back, Esc clear) | `.kiro/specs/repl-autocomplete/plans/milestone-12-autocomplete.md` | M9 |
-| **M11a** | **Liability options & log** | 🔜 next | tradeable call/put rent-liability options (bank + OTC peer, escrow no-default), no-forget settlement gate, `query ledger`, session `log` + file | `.kiro/specs/options-trading/plans/milestone-11-options-trading.md` | M4, M8 |
+| **M11a** | **Liability options & log** | ✅ done | tradeable call/put rent-liability options (bank + OTC peer, escrow no-default), no-forget settlement gate, `query ledger`, session `log` + file | `.kiro/specs/options-trading/plans/milestone-11-options-trading.md` | M4, M8 |
 | **M11b** | **Income options** | 📐 designed | turn-aware multi-player income call/put (convolution pricing) | `.kiro/specs/options-trading/design.md` (Phase M11b) | M11a |
 
 **Reqs A–D + analytic and coupled Monte-Carlo backends complete; M12 autocomplete done.**
