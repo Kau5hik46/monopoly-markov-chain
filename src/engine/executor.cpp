@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <string>
+#include "contracts/option_book.h"
 #include "domain/square.h"
 #include "engine/amount.h"
 #include "engine/help.h"
@@ -15,7 +16,8 @@ using domain::SquareType;
 
 Executor::Executor(domain::GameState& gs, const domain::Decks& decks,
                    rules::RuleConfig& rules, const Palette& pal)
-    : gs_(gs), rules_(rules), pal_(pal), query_(gs, decks, rules, pal) {}
+    : gs_(gs), rules_(rules), pal_(pal), query_(gs, decks, rules, pal),
+      resolver_(gs.board(), decks) {}
 
 void Executor::snapshot() {
   history_.push_back(gs_);
@@ -51,6 +53,7 @@ void Executor::resolveLanding(int player, int pos, int arrivalSum, CommandResult
       long rent = risk::rentOwed(gs_, pos, player, arrivalSum);
       gs_.player(player).cash -= rent;
       gs_.player(owner).cash += rent;
+      lastRentPaid_ = rent;  // captured for single-roll option maturity
       r.add(EffectKind::RentPaid, P + " pays rent " +
                                       formatMoney(static_cast<double>(rent)) + " to P" +
                                       std::to_string(owner + 1));
@@ -129,6 +132,16 @@ CommandResult Executor::execute(const Command& c) {
 
   snapshot();  // mutating commands from here
 
+  // No-forget settlement gate: a matured contract must be settled before any other
+  // mutating command. (settle/undo/save/load/log/query are routed before snapshot.)
+  if (c.kind != CommandKind::Settle && contracts::hasMatured(gs_)) {
+    gs_ = history_.back(); history_.pop_back();  // undo the snapshot we just took
+    r.fail("settlement required before continuing — settle " +
+           contracts::firstMaturedSummary(gs_) + "  (or: settle all)");
+    r.prompt("settle all");
+    return r;
+  }
+
   switch (c.kind) {
     case CommandKind::Init: {
       for (int i = 0; i < c.count; ++i)
@@ -141,6 +154,7 @@ CommandResult Executor::execute(const Command& c) {
     }
     case CommandKind::Roll: {
       if (!validPlayer(c.player, r)) break;
+      lastRentPaid_ = 0;  // reset; resolveLanding sets it if rent is paid this roll
       if (c.player != nextRoller_) {
         r.fail("out of turn — it is P" + std::to_string(nextRoller_ + 1) +
                "'s roll (use that, or 'cash'/'jail' to correct state)");
@@ -437,6 +451,41 @@ CommandResult Executor::execute(const Command& c) {
                 formatMoney(c.amountB));
       break;
     }
+    case CommandKind::Insure: {
+      if (!validPlayer(c.player, r)) break;
+      int insured = (c.insured >= 0) ? c.insured : c.player;
+      if (!validPlayer(insured, r)) break;
+      const auto type = c.isPut ? domain::OptionType::Put : domain::OptionType::Call;
+      auto res = contracts::openBank(gs_, c.player, insured, type, c.strike, resolver_);
+      if (!res.ok) { r.fail(res.error); break; }
+      r.add(EffectKind::Info, "P" + std::to_string(c.player + 1) + " bought " +
+            (c.isPut ? "PUT" : "CALL") + " on P" + std::to_string(insured + 1) +
+            " (bank) #" + std::to_string(res.contractId) + " strike " +
+            formatMoney(c.strike) + " premium " + formatMoney(res.premium));
+      break;
+    }
+    case CommandKind::Write: {
+      if (!validPlayer(c.player, r) || !validPlayer(c.player2, r)) break;
+      int insured = (c.insured >= 0) ? c.insured : c.player2;
+      if (!validPlayer(insured, r)) break;
+      const auto type = c.isPut ? domain::OptionType::Put : domain::OptionType::Call;
+      auto res = contracts::openPeer(gs_, c.player, c.player2, insured, type, c.strike,
+                                     c.premium, resolver_);
+      if (!res.ok) { r.fail(res.error); break; }
+      r.add(EffectKind::Info, "P" + std::to_string(c.player + 1) + " wrote " +
+            (c.isPut ? "PUT" : "CALL") + " to P" + std::to_string(c.player2 + 1) +
+            " on P" + std::to_string(insured + 1) + " #" + std::to_string(res.contractId) +
+            " premium " + formatMoney(res.premium) + " (fair " +
+            formatMoney(res.fairValue) + ") escrow " + formatMoney(res.escrow));
+      break;
+    }
+    case CommandKind::Settle: {
+      auto res = contracts::settle(gs_, c.contractId, c.settleAll);
+      if (!res.ok) { r.fail(res.error); break; }
+      r.add(EffectKind::CashTransfer, "settled " + std::to_string(res.settledCount) +
+            " contract(s), total payout " + formatMoney(res.totalPayout));
+      break;
+    }
     case CommandKind::Rules: {
       bool* target = nullptr;
       if (c.name == "mugging") target = &rules_.muggingEnabled;
@@ -451,6 +500,14 @@ CommandResult Executor::execute(const Command& c) {
     default:
       r.fail("command not implemented");
       break;
+  }
+  // Mature single-roll liability options on the player who just rolled (any roll
+  // outcome, including a roll that pays no rent or sends to jail -> realizedValue 0).
+  if (r.ok && c.kind == CommandKind::Roll && contracts::hasOpenOn(gs_, c.player)) {
+    contracts::matureOnRoll(gs_, c.player, lastRentPaid_);
+    r.add(EffectKind::Info, "option(s) on P" + std::to_string(c.player + 1) +
+                                " matured — settle before continuing");
+    r.prompt("settle all");
   }
   if (!r.ok && !history_.empty()) {  // roll back a failed mutation
     gs_ = history_.back();

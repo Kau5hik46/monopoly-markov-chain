@@ -6,6 +6,7 @@
 #include "engine/effect.h"
 #include "engine/query_service.h"
 #include "engine/style.h"
+#include "probability/landing.h"
 #include "rules/rule_config.h"
 
 namespace monopoly::engine {
@@ -34,9 +35,11 @@ class Executor {
   rules::RuleConfig& rules_;
   Palette pal_;
   QueryService query_;
+  probability::LandingResolver resolver_;  // for option fair-value at open
   std::vector<domain::GameState> history_;
   int lastMover_ = -1;
   int nextRoller_ = 0;
+  long lastRentPaid_ = 0;  // rent paid in the most recent resolveLanding (for maturity)
 };
 
 }  // namespace monopoly::engine
