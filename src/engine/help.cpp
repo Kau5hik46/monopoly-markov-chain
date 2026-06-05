@@ -63,6 +63,10 @@ std::string manPage(const Palette& pal) {
     << "                                from the bank (default call; Pj defaults to Pi)\n"
     << "    write Pw -> Ph [call|put] [Pj] [strike K] premium P   peer-write an option;\n"
     << "                                escrow is locked from Pw (no-default guarantee)\n"
+    << "    insure Ph [call|put] income Po [strike K]   bank option on Po's income\n"
+    << "                                (rent Po collects until Po's next turn)\n"
+    << "    write Pw -> Ph [call|put] income Po [strike K] premium P [landers Pa Pb]\n"
+    << "                                peer income option; landers default to all in reach\n"
     << "    settle <id> | settle all    settle matured option(s) — required before play continues\n\n";
 
   o << sec("RULES", pal) << "\n"

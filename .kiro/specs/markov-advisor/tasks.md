@@ -41,7 +41,7 @@ Each milestone builds and tests independently (`ctest` green) before the next st
 
 | **M12** | **REPL autocomplete** | ✅ done | command-aware TAB completion: verbs, context operands (players/keywords/query subs), `@`square, and empty-line cycling of recommended actions (Shift-TAB back, Esc clear) | `.kiro/specs/repl-autocomplete/plans/milestone-12-autocomplete.md` | M9 |
 | **M11a** | **Liability options & log** | ✅ done | tradeable call/put rent-liability options (bank + OTC peer, escrow no-default), no-forget settlement gate, `query ledger`, session `log` + file | `.kiro/specs/options-trading/plans/milestone-11-options-trading.md` | M4, M8 |
-| **M11b** | **Income options** | 📐 designed | turn-aware multi-player income call/put (convolution pricing) | `.kiro/specs/options-trading/design.md` (Phase M11b) | M11a |
+| **M11b** | **Income options** | ✅ done | turn-aware multi-player income call/put (convolution pricing, conservative escrow, accumulate-until-owner's-turn maturity) | `.kiro/specs/options-trading/plans/milestone-11b-income-options.md` | M11a |
 
 **Reqs A–D + analytic and coupled Monte-Carlo backends complete; M12 autocomplete done.**
 M11a/M11b add the options-trading layer.
