@@ -35,6 +35,25 @@ OpenResult openPeer(domain::GameState& gs, int writer, int holder, int insured,
 // Flip every Open liability contract on `insured` to Matured, recording realizedValue.
 void matureOnRoll(domain::GameState& gs, int insured, long realizedValue);
 
+// Bank-written income option on owner `owner`. Empty `landers` => auto-detect reachable.
+OpenResult openIncomeBank(domain::GameState& gs, int holder, int owner,
+                          domain::OptionType type, long strike, std::vector<int> landers,
+                          const probability::LandingResolver& resolver);
+
+// Peer-written income option; escrow = conservative bound on total income to `owner`.
+OpenResult openIncomePeer(domain::GameState& gs, int writer, int holder, int owner,
+                          domain::OptionType type, long strike, long premium,
+                          std::vector<int> landers,
+                          const probability::LandingResolver& resolver);
+
+// Window accumulation: if `payer` is a referenced lander of an open income contract on
+// `owner`, add `rent` to its realizedValue and bump landersRolled.
+void accumulateIncome(domain::GameState& gs, int owner, int payer, long rent);
+
+// Turn-aware maturity: when `owner` is about to roll again, mature their open income
+// contracts that have seen >= 1 lander roll (the round window has closed).
+void matureIncomeOnOwnerTurn(domain::GameState& gs, int owner);
+
 // True if any contract awaits settlement (the no-forget gate predicate).
 bool hasMatured(const domain::GameState& gs);
 

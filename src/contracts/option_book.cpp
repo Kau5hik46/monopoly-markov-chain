@@ -1,6 +1,7 @@
 #include "contracts/option_book.h"
 
 #include <algorithm>
+#include <utility>
 #include "pricing/option_chain.h"
 
 namespace monopoly::contracts {
@@ -95,6 +96,101 @@ void matureOnRoll(domain::GameState& gs, int insured, long realizedValue) {
       c.status = domain::ContractStatus::Matured;
       c.realizedValue = realizedValue;
     }
+}
+
+namespace {
+// Conservative escrow for an income contract: per lander, 2 x its worst-case single
+// rent to the owner (covers the common two-paying-rolls doubles case), summed. For a
+// put the payoff peaks at income 0, so escrow = strike.
+long incomeEscrow(const domain::GameState& gs, int owner, domain::OptionType type,
+                  long strike, const std::vector<int>& landers,
+                  const probability::LandingResolver& resolver) {
+  if (type == domain::OptionType::Put) return strike;
+  long bound = 0;
+  for (int l : landers) {
+    auto one = pricing::buildIncomeDistribution(gs, owner, {l}, resolver);
+    bound += 2 * lround(pricing::maxLossOf(one));
+  }
+  return bound;
+}
+
+// Shared income open. writer == kUnowned => bank (no escrow, premium = fair value).
+OpenResult openIncome(domain::GameState& gs, int writer, int holder, int owner,
+                      domain::OptionType type, long strike, long premium,
+                      std::vector<int> landers,
+                      const probability::LandingResolver& resolver) {
+  OpenResult r;
+  const bool bank = (writer == domain::kUnowned);
+  if (!validPlayer(gs, holder) || !validPlayer(gs, owner) ||
+      (!bank && !validPlayer(gs, writer))) {
+    r.ok = false; r.error = "unknown player"; return r;
+  }
+  if (!bank && writer == holder) {
+    r.ok = false; r.error = "writer and holder must differ"; return r;
+  }
+  if (strike < 0) { r.ok = false; r.error = "strike must be >= 0"; return r; }
+  if (!bank && premium < 0) { r.ok = false; r.error = "premium must be >= 0"; return r; }
+
+  if (landers.empty()) landers = pricing::reachableLanders(gs, owner, resolver);
+  auto dist = pricing::buildIncomeDistribution(gs, owner, landers, resolver);
+  const long fair = lround(pricing::fairValueAtStrike(dist, static_cast<double>(strike),
+                                                      type == domain::OptionType::Put));
+  const long charge = bank ? fair : premium;
+  const long escrow = bank ? 0 : incomeEscrow(gs, owner, type, strike, landers, resolver);
+  if (!bank && gs.player(writer).cash < escrow) {
+    r.ok = false; r.error = "writer cannot cover escrow of " + std::to_string(escrow);
+    return r;
+  }
+
+  gs.player(holder).cash -= charge;
+  if (!bank) { gs.player(writer).cash += charge; gs.player(writer).cash -= escrow; }
+
+  domain::OptionContract c;
+  c.writer = writer; c.holder = holder; c.insured = owner;
+  c.type = type; c.underlying = domain::Underlying::Income;
+  c.strike = strike; c.premium = charge; c.escrow = escrow;
+  c.status = domain::ContractStatus::Open;
+  c.landers = std::move(landers);
+  gs.addContract(c);
+
+  r.contractId = gs.contracts().back().id;
+  r.premium = charge; r.escrow = escrow; r.fairValue = fair;
+  return r;
+}
+}  // namespace
+
+OpenResult openIncomeBank(domain::GameState& gs, int holder, int owner,
+                          domain::OptionType type, long strike, std::vector<int> landers,
+                          const probability::LandingResolver& resolver) {
+  return openIncome(gs, domain::kUnowned, holder, owner, type, strike, 0,
+                    std::move(landers), resolver);
+}
+
+OpenResult openIncomePeer(domain::GameState& gs, int writer, int holder, int owner,
+                          domain::OptionType type, long strike, long premium,
+                          std::vector<int> landers,
+                          const probability::LandingResolver& resolver) {
+  return openIncome(gs, writer, holder, owner, type, strike, premium,
+                    std::move(landers), resolver);
+}
+
+void accumulateIncome(domain::GameState& gs, int owner, int payer, long rent) {
+  for (auto& c : gs.contracts()) {
+    if (c.status != domain::ContractStatus::Open ||
+        c.underlying != domain::Underlying::Income || c.insured != owner)
+      continue;
+    if (std::find(c.landers.begin(), c.landers.end(), payer) == c.landers.end()) continue;
+    c.realizedValue += rent;
+    ++c.landersRolled;
+  }
+}
+
+void matureIncomeOnOwnerTurn(domain::GameState& gs, int owner) {
+  for (auto& c : gs.contracts())
+    if (c.status == domain::ContractStatus::Open &&
+        c.underlying == domain::Underlying::Income && c.insured == owner &&
+        c.landersRolled > 0)
+      c.status = domain::ContractStatus::Matured;
 }
 
 bool hasMatured(const domain::GameState& gs) {
