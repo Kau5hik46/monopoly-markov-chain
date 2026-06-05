@@ -74,4 +74,28 @@ OptionChainResult buildOptionChain(const domain::GameState& gs, int mover,
   return res;
 }
 
+double fairPremiumAtStrike(const std::vector<LossOutcome>& loss, double K) {
+  double premium = 0.0;
+  for (const auto& o : loss)
+    if (o.rent > K) premium += o.prob * (o.rent - K);
+  return premium;
+}
+
+double fairValueAtStrike(const std::vector<LossOutcome>& loss, double K, bool isPut) {
+  if (!isPut) return fairPremiumAtStrike(loss, K);
+  double mass = 0.0, value = 0.0;
+  for (const auto& o : loss) {
+    mass += o.prob;
+    if (o.rent < K) value += o.prob * (K - o.rent);
+  }
+  value += (1.0 - mass) * K;  // no-liability mass (L == 0) pays K under a put
+  return value;
+}
+
+double maxLossOf(const std::vector<LossOutcome>& loss) {
+  double m = 0.0;
+  for (const auto& o : loss) m = std::max(m, o.rent);
+  return m;
+}
+
 }  // namespace monopoly::pricing
