@@ -39,6 +39,7 @@ add_library(monopoly_core
   src/rules/rule_config.cpp
   src/rules/rule_logic.cpp
   src/engine/name_table.cpp
+  src/engine/completion.cpp
   src/engine/line_reader.cpp
   src/engine/lexer.cpp
   src/engine/parser.cpp
@@ -87,6 +88,7 @@ add_executable(monopoly_tests
   tests/unit/test_rule_logic.cpp
   tests/unit/test_engine_lex.cpp
   tests/unit/test_engine_parse.cpp
+  tests/unit/test_completion.cpp
   tests/unit/test_engine_exec.cpp
   tests/unit/test_engine_repl.cpp
   tests/unit/test_monte_carlo.cpp
