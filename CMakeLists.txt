@@ -99,6 +99,7 @@ add_executable(monopoly_tests
   tests/unit/test_monte_carlo.cpp
   tests/unit/test_option_chain.cpp
   tests/unit/test_pricing_strike.cpp
+  tests/unit/test_income_chain.cpp
   tests/unit/test_option_book.cpp
   tests/unit/test_forecast.cpp
   tests/unit/test_game_sim.cpp

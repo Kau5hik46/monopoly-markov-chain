@@ -45,4 +45,16 @@ double fairValueAtStrike(const std::vector<LossOutcome>& loss, double K, bool is
 // Worst-case single-roll rent over the distribution (0 if empty).
 double maxLossOf(const std::vector<LossOutcome>& loss);
 
+// Opponents (!= owner, not in jail) with > 0 probability of paying `owner` rent on
+// their next roll — the auto-detected lander set for an income option.
+std::vector<int> reachableLanders(const domain::GameState& gs, int owner,
+                                  const probability::LandingResolver& resolver);
+
+// Distribution of the TOTAL rent `owner` collects when each lander takes one next roll,
+// formed by convolving each lander's per-roll rent-to-owner distribution. Contains
+// value>0 outcomes only (the no-income mass is 1 - Σprob, as in buildLossDistribution).
+std::vector<LossOutcome> buildIncomeDistribution(
+    const domain::GameState& gs, int owner, const std::vector<int>& landers,
+    const probability::LandingResolver& resolver);
+
 }  // namespace monopoly::pricing
