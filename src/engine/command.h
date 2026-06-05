@@ -7,11 +7,12 @@ namespace monopoly::engine {
 enum class CommandKind {
   None, Init, Roll, Buy, Sell, Rent, Build, Mortgage, Unmortgage, Tax, Jail, Mug,
   Airport, Claim, Cash, Card, Trade, Query, Rules, Save, Load, Undo, Help, Quit,
+  Insure, Write, Settle, Log,
   Invalid
 };
 
 enum class QueryKind {
-  Risk, Options, Dist, Stationary, Value, State, Board, Chain, Forecast, Simulate
+  Risk, Options, Dist, Stationary, Value, State, Board, Chain, Forecast, Simulate, Ledger
 };
 
 // Parsed command: a tagged value (kind + operands). The executor evaluates it.
@@ -38,6 +39,16 @@ struct Command {
   std::vector<int> squaresB;
   long amountA = 0;
   long amountB = 0;
+
+  // options trading. insure: player=holder. write: player=writer, player2=holder.
+  int insured = -1;        // underlying player (defaults to holder if unset)
+  bool isPut = false;      // call (default) vs put; executor maps to domain::OptionType
+  long strike = 0;         // option strike K
+  long premium = 0;        // peer-written premium
+  bool hasStrike = false;
+  bool hasPremium = false;
+  int contractId = -1;     // settle target (-1 with settleAll)
+  bool settleAll = false;
 };
 
 }  // namespace monopoly::engine
