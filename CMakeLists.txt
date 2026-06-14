@@ -77,6 +77,7 @@ add_executable(monopoly_tests
   tests/unit/test_matrix.cpp
   tests/unit/test_dice.cpp
   tests/unit/test_board.cpp
+  tests/unit/test_currency.cpp
   tests/unit/test_deck.cpp
   tests/unit/test_microstate.cpp
   tests/unit/test_landing.cpp

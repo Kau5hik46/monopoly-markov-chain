@@ -27,11 +27,18 @@ inline std::optional<long> parseAmount(const std::string& tok) {
   }
 }
 
-// Formats pounds in K/M units: £1.61M, £250.0K, £48.
+// Process-wide display currency symbol (UTF-8). Set once at startup from the chosen
+// board (e.g. "£" for London, "$" for the US board); defaults to £.
+inline std::string& moneySymbol() {
+  static std::string sym = "\xC2\xA3";
+  return sym;
+}
+
+// Formats an amount in K/M units with the active currency symbol: £1.61M, $250.0K, $48.
 inline std::string formatMoney(double v) {
   std::ostringstream os;
   const double a = std::fabs(v);
-  os << "\xC2\xA3";
+  os << moneySymbol();
   if (a >= 1e6) os << std::fixed << std::setprecision(2) << v / 1e6 << "M";
   else if (a >= 1e3) os << std::fixed << std::setprecision(1) << v / 1e3 << "K";
   else os << std::fixed << std::setprecision(0) << v;
