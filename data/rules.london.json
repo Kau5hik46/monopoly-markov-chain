@@ -8,6 +8,7 @@
   "housesPerIncomeTax": 2,
   "housesPerSuperTax": 1,
   "respectHouseSupply": true,
+  "evenBuild": true,
   "jailMaxAttempts": 3,
   "jailFine": 500000,
   "passGoBonus": 2000000,

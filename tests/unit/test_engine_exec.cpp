@@ -191,3 +191,23 @@ TEST(Executor, RejectsBuildingOnUnownedStreet) {
   EXPECT_FALSE(h.run("build P1 @#1 + 1").ok);   // P1 doesn't own it
   EXPECT_FALSE(h.run("build P1 @#0 + 1").ok);   // GO isn't a street
 }
+
+TEST(Executor, BuildRequiresWholeColorGroup) {
+  Harness h;
+  h.run("init 2");
+  ASSERT_TRUE(h.run("buy P1 @#1").ok);           // one BROWN street only
+  EXPECT_FALSE(h.run("build P1 @#1 + 1").ok);    // doesn't own the whole group
+  ASSERT_TRUE(h.run("buy P1 @#3").ok);           // now owns both BROWN (1,3)
+  EXPECT_TRUE(h.run("build P1 @#1 + 1").ok);     // ok: whole group, even
+}
+
+TEST(Executor, EvenBuildRuleEnforcedAndConfigurable) {
+  Harness h;
+  h.run("init 2");
+  ASSERT_TRUE(h.run("buy P1 @#1").ok);
+  ASSERT_TRUE(h.run("buy P1 @#3").ok);
+  ASSERT_TRUE(h.run("build P1 @#1 + 1").ok);     // {1,0}
+  EXPECT_FALSE(h.run("build P1 @#1 + 1").ok);    // {2,0} would be uneven -> rejected
+  ASSERT_TRUE(h.run("rules evenbuild off").ok);
+  EXPECT_TRUE(h.run("build P1 @#1 + 1").ok);     // even-build off -> {2,0} allowed
+}

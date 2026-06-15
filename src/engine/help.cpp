@@ -48,7 +48,8 @@ std::string manPage(const Palette& pal) {
     << "    buy Pi @SQ [= amt]          buy a property (price defaults to face value)\n"
     << "    sell Pi -> Pj @SQ [= amt]   transfer a property for cash\n"
     << "    rent Pi -> Pj @SQ [= amt]   pay rent (auto-computed if amount omitted)\n"
-    << "    build Pi @SQ +|- n          add / remove n houses (5 = hotel)\n"
+    << "    build Pi @SQ +|- n          add / remove n houses (5 = hotel); requires owning\n"
+    << "                                the whole colour group, and even-build by default\n"
     << "    mortgage|unmortgage Pi @SQ  toggle a mortgage\n"
     << "    trade Pi <-> Pj : @A 1M <-> @B   swap property+cash bundles between players\n\n";
 
@@ -81,7 +82,7 @@ std::string manPage(const Palette& pal) {
     << "    settle <id> | settle all    settle matured option(s) — required before play continues\n\n";
 
   o << sec("RULES", pal) << "\n"
-    << "    rules <mugging|airport|pot> on|off    toggle a house rule mid-game\n\n";
+    << "    rules <mugging|airport|pot|evenbuild> on|off   toggle a house rule mid-game\n\n";
 
   o << sec("CONTROL", pal) << "\n"
     << "    save FILE                   write the game state to FILE (JSON)\n"

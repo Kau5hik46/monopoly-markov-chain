@@ -284,9 +284,24 @@ CommandResult Executor::execute(const Command& c) {
       if (gs_.ownerOf(c.posA) != c.player) {
         r.fail("P" + std::to_string(c.player + 1) + " does not own " + sq.name); break;
       }
+      if (!gs_.ownsWholeGroup(c.player, sq.group)) {
+        r.fail("must own the whole color group to build on " + sq.name); break;
+      }
       int h = gs_.housesOn(c.posA);
       int nh = c.sign ? h + c.count : h - c.count;
       if (nh < 0 || nh > 5) { r.fail("house count out of range (0..5)"); break; }
+      // Even-build (configurable house rule): houses across the group stay within 1.
+      if (rules_.evenBuild) {
+        int mn = nh, mx = nh;
+        for (int p : gs_.board().positionsInGroup(sq.group)) {
+          const int hp = (p == c.posA) ? nh : gs_.housesOn(p);
+          mn = std::min(mn, hp);
+          mx = std::max(mx, hp);
+        }
+        if (mx - mn > 1) {
+          r.fail("even-build rule: develop this group evenly (within 1 house)"); break;
+        }
+      }
       const int delta = nh - h;
       if (delta > 0 && rules_.freeParkingPotEnabled && gs_.bank().housesAvailable < delta) {
         r.fail("bank is out of houses");
@@ -524,6 +539,8 @@ CommandResult Executor::execute(const Command& c) {
       else if (c.name == "airport") target = &rules_.airportTravelEnabled;
       else if (c.name == "pot" || c.name == "freeparking")
         target = &rules_.freeParkingPotEnabled;
+      else if (c.name == "evenbuild" || c.name == "even")
+        target = &rules_.evenBuild;
       if (!target) { r.fail("unknown rule: " + c.name); break; }
       *target = c.flag;
       r.add(EffectKind::Info, "rule '" + c.name + "' " + (c.flag ? "on" : "off"));
