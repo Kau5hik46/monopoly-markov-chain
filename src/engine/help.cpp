@@ -23,11 +23,22 @@ std::string manPage(const Palette& pal) {
     << "    it, prints the resulting events and the full game state, and shows the next\n"
     << "    player's roll risk plus a fair insurance price for the upcoming roll.\n\n";
 
+  o << sec("FAST INPUT", pal) << "\n"
+    << "    d1,d2  (or 'd1 d2')         roll for the player whose turn it is — e.g. '3,4'\n"
+    << "                                (no need to type 'roll Pi =')\n"
+    << "    <Enter>                     accept the highlighted default in the 'fast:' menu\n"
+    << "    N                           accept fast-menu item N (a lone digit, e.g. '1')\n"
+    << "    @<TAB>                      complete a square name; <TAB> also completes verbs,\n"
+    << "                                players, keywords, and cycles recommended actions\n"
+    << "    Safe actions (roll/settle/claim/skip) run at once; money moves (buy/tax/trade/\n"
+    << "    write/insure) and prompts needing a value pre-fill the line to confirm with Enter.\n"
+    << "    A rejected command is reloaded into the buffer so you can fix it in place.\n\n";
+
   o << sec("SETUP", pal) << "\n"
     << "    init N                      start a game with N players (P1..PN)\n\n";
 
   o << sec("MOVEMENT", pal) << "\n"
-    << "    roll Pi = d1,d2             apply a dice roll (GO bonus, jail, doubles handled)\n"
+    << "    roll Pi = d1,d2             apply a dice roll (or just 'd1,d2' for the current player)\n"
     << "    jail Pi +|-                 send to / release from jail\n"
     << "    airport Pi @FROM -> @TO     travel between two airports you own (skips a turn)\n"
     << "    mug Pi vs Pj = a:b          resolve a mugging contest (Pi's total : Pj's total)\n"
@@ -84,7 +95,8 @@ std::string manPage(const Palette& pal) {
     << "    init 2\n"
     << "    buy P2 @TRAFALGAR_SQUARE\n"
     << "    build P2 @#24 + 5\n"
-    << "    roll P1 = 3,4\n"
+    << "    3,4                         (P1's turn) shorthand for 'roll P1 = 3,4'\n"
+    << "    1                           accept fast-menu item 1 (e.g. the buy prompt)\n"
     << "    query options P1\n\n";
 
   o << sec("NOTES", pal) << "\n"

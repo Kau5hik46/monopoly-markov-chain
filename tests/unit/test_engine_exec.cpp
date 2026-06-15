@@ -159,3 +159,35 @@ TEST(Executor, InvalidCommandReportsError) {
   auto r = h.run("frobnicate");
   EXPECT_FALSE(r.ok);
 }
+
+TEST(Executor, RejectsBuyingNonPurchasableSquares) {
+  Harness h;
+  h.run("init 2");
+  EXPECT_FALSE(h.run("buy P1 @#0").ok);   // GO
+  EXPECT_FALSE(h.run("buy P1 @#2").ok);   // Community Chest
+  EXPECT_FALSE(h.run("buy P1 @#4").ok);   // Income Tax
+  EXPECT_FALSE(h.run("buy P1 @#10").ok);  // Jail
+  EXPECT_FALSE(h.run("buy P1 @#20").ok);  // Free Parking
+  EXPECT_FALSE(h.run("buy P1 @#30").ok);  // Go To Jail
+  EXPECT_TRUE(h.run("buy P1 @#1").ok);    // a real street is fine
+  EXPECT_FALSE(h.run("buy P2 @#1").ok);   // already owned
+}
+
+TEST(Executor, RejectsMortgagingNonPropertyOrUnowned) {
+  Harness h;
+  h.run("init 2");
+  EXPECT_FALSE(h.run("mortgage P1 @#0").ok);    // GO is not mortgageable
+  EXPECT_FALSE(h.run("mortgage P1 @#1").ok);    // P1 does not own it
+  ASSERT_TRUE(h.run("buy P1 @#1").ok);
+  EXPECT_TRUE(h.run("mortgage P1 @#1").ok);     // now owned -> ok
+  EXPECT_FALSE(h.run("mortgage P1 @#1").ok);    // already mortgaged
+  EXPECT_TRUE(h.run("unmortgage P1 @#1").ok);
+  EXPECT_FALSE(h.run("unmortgage P1 @#1").ok);  // not mortgaged
+}
+
+TEST(Executor, RejectsBuildingOnUnownedStreet) {
+  Harness h;
+  h.run("init 2");
+  EXPECT_FALSE(h.run("build P1 @#1 + 1").ok);   // P1 doesn't own it
+  EXPECT_FALSE(h.run("build P1 @#0 + 1").ok);   // GO isn't a street
+}

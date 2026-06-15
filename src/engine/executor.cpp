@@ -240,6 +240,10 @@ CommandResult Executor::execute(const Command& c) {
     }
     case CommandKind::Buy: {
       if (!validPlayer(c.player, r)) break;
+      if (!domain::isPurchasable(gs_.board().at(c.posA).type)) {
+        r.fail(gs_.board().at(c.posA).name + " is not a purchasable property");
+        break;
+      }
       if (gs_.ownerOf(c.posA) != domain::kUnowned) { r.fail("already owned"); break; }
       long price = c.hasAmount ? c.amount : gs_.board().at(c.posA).price;
       gs_.player(c.player).cash -= price;
@@ -277,6 +281,9 @@ CommandResult Executor::execute(const Command& c) {
       if (!validPlayer(c.player, r)) break;
       const auto& sq = gs_.board().at(c.posA);
       if (sq.type != SquareType::Street) { r.fail("can only build on streets"); break; }
+      if (gs_.ownerOf(c.posA) != c.player) {
+        r.fail("P" + std::to_string(c.player + 1) + " does not own " + sq.name); break;
+      }
       int h = gs_.housesOn(c.posA);
       int nh = c.sign ? h + c.count : h - c.count;
       if (nh < 0 || nh > 5) { r.fail("house count out of range (0..5)"); break; }
@@ -299,7 +306,16 @@ CommandResult Executor::execute(const Command& c) {
     case CommandKind::Mortgage:
     case CommandKind::Unmortgage: {
       if (!validPlayer(c.player, r)) break;
+      const auto& msq = gs_.board().at(c.posA);
+      if (!domain::isPurchasable(msq.type)) {
+        r.fail(msq.name + " cannot be mortgaged"); break;
+      }
+      if (gs_.ownerOf(c.posA) != c.player) {
+        r.fail("P" + std::to_string(c.player + 1) + " does not own " + msq.name); break;
+      }
       const bool m = (c.kind == CommandKind::Mortgage);
+      if (m && gs_.isMortgaged(c.posA)) { r.fail(msq.name + " is already mortgaged"); break; }
+      if (!m && !gs_.isMortgaged(c.posA)) { r.fail(msq.name + " is not mortgaged"); break; }
       gs_.setMortgaged(c.posA, m);
       long mv = gs_.board().at(c.posA).mortgage;
       gs_.player(c.player).cash += m ? mv : -mv;
