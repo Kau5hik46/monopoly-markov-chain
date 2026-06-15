@@ -1,0 +1,21 @@
+{
+  "edition": "us",
+  "_note": "Canonical US Monopoly movement set. Targets: GO=0, ST. CHARLES PLACE=11, ILLINOIS AVENUE=24, READING RAILROAD=5, BOARDWALK=39. NONE = money/non-movement cards.",
+  "chance": [
+    {"move":"ADVANCE_TO","target":0,"weight":1},
+    {"move":"ADVANCE_TO","target":24,"weight":1},
+    {"move":"ADVANCE_TO","target":11,"weight":1},
+    {"move":"ADVANCE_TO","target":5,"weight":1},
+    {"move":"ADVANCE_TO","target":39,"weight":1},
+    {"move":"NEAREST_STATION","target":0,"weight":2},
+    {"move":"NEAREST_UTILITY","target":0,"weight":1},
+    {"move":"GO_TO_JAIL","target":0,"weight":1},
+    {"move":"BACK_3","target":0,"weight":1},
+    {"move":"NONE","target":0,"weight":6}
+  ],
+  "community_chest": [
+    {"move":"ADVANCE_TO","target":0,"weight":1},
+    {"move":"GO_TO_JAIL","target":0,"weight":1},
+    {"move":"NONE","target":0,"weight":14}
+  ]
+}
