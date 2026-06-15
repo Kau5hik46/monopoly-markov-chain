@@ -20,6 +20,10 @@ struct RuleConfig {
   int housesPerSuperTax = 1;
   bool respectHouseSupply = true;  // draw from the bank's 32/12 supply
 
+  // Building: even-build rule (houses across a color group must stay within 1 of each
+  // other). Group-ownership is always required to build; this only governs evenness.
+  bool evenBuild = true;
+
   // Jail policy.
   int jailMaxAttempts = 3;
   long jailFine = 500000;
@@ -27,6 +31,8 @@ struct RuleConfig {
   // Economy.
   long passGoBonus = 2000000;
   bool landOnGoDoubles = true;  // landing exactly on GO pays the salary twice
+  long startingCash = 15000000;         // dealt to each player at init
+  long freeParkingHouseCash = 1000000;  // cash per unplaceable house on a pot claim
 };
 
 // Fluent builder (Builder pattern).

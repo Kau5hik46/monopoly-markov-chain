@@ -159,3 +159,78 @@ TEST(Executor, InvalidCommandReportsError) {
   auto r = h.run("frobnicate");
   EXPECT_FALSE(r.ok);
 }
+
+TEST(Executor, RejectsBuyingNonPurchasableSquares) {
+  Harness h;
+  h.run("init 2");
+  EXPECT_FALSE(h.run("buy P1 @#0").ok);   // GO
+  EXPECT_FALSE(h.run("buy P1 @#2").ok);   // Community Chest
+  EXPECT_FALSE(h.run("buy P1 @#4").ok);   // Income Tax
+  EXPECT_FALSE(h.run("buy P1 @#10").ok);  // Jail
+  EXPECT_FALSE(h.run("buy P1 @#20").ok);  // Free Parking
+  EXPECT_FALSE(h.run("buy P1 @#30").ok);  // Go To Jail
+  EXPECT_TRUE(h.run("buy P1 @#1").ok);    // a real street is fine
+  EXPECT_FALSE(h.run("buy P2 @#1").ok);   // already owned
+}
+
+TEST(Executor, RejectsMortgagingNonPropertyOrUnowned) {
+  Harness h;
+  h.run("init 2");
+  EXPECT_FALSE(h.run("mortgage P1 @#0").ok);    // GO is not mortgageable
+  EXPECT_FALSE(h.run("mortgage P1 @#1").ok);    // P1 does not own it
+  ASSERT_TRUE(h.run("buy P1 @#1").ok);
+  EXPECT_TRUE(h.run("mortgage P1 @#1").ok);     // now owned -> ok
+  EXPECT_FALSE(h.run("mortgage P1 @#1").ok);    // already mortgaged
+  EXPECT_TRUE(h.run("unmortgage P1 @#1").ok);
+  EXPECT_FALSE(h.run("unmortgage P1 @#1").ok);  // not mortgaged
+}
+
+TEST(Executor, RejectsBuildingOnUnownedStreet) {
+  Harness h;
+  h.run("init 2");
+  EXPECT_FALSE(h.run("build P1 @#1 + 1").ok);   // P1 doesn't own it
+  EXPECT_FALSE(h.run("build P1 @#0 + 1").ok);   // GO isn't a street
+}
+
+TEST(Executor, BuildRequiresWholeColorGroup) {
+  Harness h;
+  h.run("init 2");
+  ASSERT_TRUE(h.run("buy P1 @#1").ok);           // one BROWN street only
+  EXPECT_FALSE(h.run("build P1 @#1 + 1").ok);    // doesn't own the whole group
+  ASSERT_TRUE(h.run("buy P1 @#3").ok);           // now owns both BROWN (1,3)
+  EXPECT_TRUE(h.run("build P1 @#1 + 1").ok);     // ok: whole group, even
+}
+
+TEST(Executor, EvenBuildRuleEnforcedAndConfigurable) {
+  Harness h;
+  h.run("init 2");
+  ASSERT_TRUE(h.run("buy P1 @#1").ok);
+  ASSERT_TRUE(h.run("buy P1 @#3").ok);
+  ASSERT_TRUE(h.run("build P1 @#1 + 1").ok);     // {1,0}
+  EXPECT_FALSE(h.run("build P1 @#1 + 1").ok);    // {2,0} would be uneven -> rejected
+  ASSERT_TRUE(h.run("rules evenbuild off").ok);
+  EXPECT_TRUE(h.run("build P1 @#1 + 1").ok);     // even-build off -> {2,0} allowed
+}
+
+TEST(Executor, CannotBuildWhenGroupPropertyMortgaged) {
+  Harness h;
+  h.run("init 2");
+  ASSERT_TRUE(h.run("buy P1 @#1").ok);
+  ASSERT_TRUE(h.run("buy P1 @#3").ok);          // BROWN monopoly, no houses
+  ASSERT_TRUE(h.run("mortgage P1 @#3").ok);     // mortgage one member
+  EXPECT_FALSE(h.run("build P1 @#1 + 1").ok);   // can't build while #3 is mortgaged
+  ASSERT_TRUE(h.run("unmortgage P1 @#3").ok);
+  EXPECT_TRUE(h.run("build P1 @#1 + 1").ok);    // now allowed
+}
+
+TEST(Executor, CannotMortgageWithHousesInGroup) {
+  Harness h;
+  h.run("init 2");
+  ASSERT_TRUE(h.run("buy P1 @#1").ok);
+  ASSERT_TRUE(h.run("buy P1 @#3").ok);
+  ASSERT_TRUE(h.run("build P1 @#1 + 1").ok);    // group now has a house
+  EXPECT_FALSE(h.run("mortgage P1 @#3").ok);    // must sell all group houses first
+  EXPECT_FALSE(h.run("mortgage P1 @#1").ok);
+  ASSERT_TRUE(h.run("build P1 @#1 - 1").ok);    // sell back to 0
+  EXPECT_TRUE(h.run("mortgage P1 @#1").ok);     // now allowed
+}

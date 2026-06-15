@@ -17,6 +17,35 @@ struct BankState {
   int hotelsAvailable = kHotelSupply;
 };
 
+enum class ContractStatus { Open, Matured, Settled };
+enum class OptionType { Call, Put };           // direction
+enum class Underlying { Liability, Income };   // Income == Phase M11b
+
+// A single-roll option. writer == kUnowned (-1) means the bank.
+struct OptionContract {
+  int id = 0;
+  int writer = kUnowned;   // -1 == bank
+  int holder = -1;         // the long (premium payer, claim receiver)
+  int insured = -1;        // liability: the roller; income (M11b): the owner Py
+  OptionType type = OptionType::Call;
+  Underlying underlying = Underlying::Liability;
+  long strike = 0;         // K
+  long premium = 0;        // holder -> writer at open
+  long escrow = 0;         // locked from a peer writer (0 for bank)
+  ContractStatus status = ContractStatus::Open;
+  long realizedValue = 0;  // liability: rent insured paid; income: rent Py collected
+  std::vector<int> landers;   // income only (M11b): referenced opponents
+  int landersRolled = 0;      // income only (M11b)
+};
+
+// One settled contract, appended to the ledger. payout = writer -> holder.
+struct LedgerEntry {
+  int id = 0, writer = kUnowned, holder = -1, insured = -1;
+  OptionType type = OptionType::Call;
+  Underlying underlying = Underlying::Liability;
+  long strike = 0, premium = 0, escrow = 0, payout = 0;
+};
+
 // Mutable game ground truth. Holds a reference to the immutable Board.
 class GameState {
  public:
@@ -64,6 +93,19 @@ class GameState {
   int freeParkingPot() const { return freeParkingPot_; }
   void setFreeParkingPot(int n) { freeParkingPot_ = n; }
 
+  // Option contracts & settlement ledger --------------------------------
+  std::vector<OptionContract>& contracts() { return contracts_; }
+  const std::vector<OptionContract>& contracts() const { return contracts_; }
+  std::vector<LedgerEntry>& ledger() { return ledger_; }
+  const std::vector<LedgerEntry>& ledger() const { return ledger_; }
+  int nextContractId() const { return nextContractId_; }      // peek next id
+  void addContract(OptionContract c) {                        // assigns + bumps id
+    if (c.id == 0) c.id = nextContractId_;
+    if (c.id >= nextContractId_) nextContractId_ = c.id + 1;
+    contracts_.push_back(std::move(c));
+  }
+  void setNextContractId(int n) { nextContractId_ = n; }      // for load
+
  private:
   const Board* board_;
   std::vector<PlayerState> players_;
@@ -72,6 +114,9 @@ class GameState {
   std::array<bool, kBoardSize> mortgaged_;
   BankState bank_;
   int freeParkingPot_ = 0;
+  std::vector<OptionContract> contracts_;
+  std::vector<LedgerEntry> ledger_;
+  int nextContractId_ = 1;
 };
 
 }  // namespace monopoly::domain

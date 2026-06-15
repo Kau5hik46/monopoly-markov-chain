@@ -38,6 +38,9 @@ Board loadBoardFromFile(const std::string& path) {
 
   Board board(std::move(squares));
 
+  // Optional display currency symbol (defaults to £).
+  if (j.contains("currency")) board.setCurrency(j.at("currency").get<std::string>());
+
   // Optional rent rules (stations/utilities/monopoly bonus); defaults if absent.
   if (j.contains("rentRules")) {
     const auto& jr = j.at("rentRules");

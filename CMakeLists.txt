@@ -36,9 +36,12 @@ add_library(monopoly_core
   src/risk/game_sim.cpp
   src/pricing/insurance_pricer.cpp
   src/pricing/option_chain.cpp
+  src/contracts/option_book.cpp
   src/rules/rule_config.cpp
   src/rules/rule_logic.cpp
   src/engine/name_table.cpp
+  src/engine/completion.cpp
+  src/engine/fastpath.cpp
   src/engine/line_reader.cpp
   src/engine/lexer.cpp
   src/engine/parser.cpp
@@ -75,6 +78,7 @@ add_executable(monopoly_tests
   tests/unit/test_matrix.cpp
   tests/unit/test_dice.cpp
   tests/unit/test_board.cpp
+  tests/unit/test_currency.cpp
   tests/unit/test_deck.cpp
   tests/unit/test_microstate.cpp
   tests/unit/test_landing.cpp
@@ -87,10 +91,19 @@ add_executable(monopoly_tests
   tests/unit/test_rule_logic.cpp
   tests/unit/test_engine_lex.cpp
   tests/unit/test_engine_parse.cpp
+  tests/unit/test_completion.cpp
+  tests/unit/test_fastpath.cpp
+  tests/unit/test_options_dsl.cpp
+  tests/unit/test_options_exec.cpp
+  tests/unit/test_options_log.cpp
+  tests/unit/test_options_session.cpp
   tests/unit/test_engine_exec.cpp
   tests/unit/test_engine_repl.cpp
   tests/unit/test_monte_carlo.cpp
   tests/unit/test_option_chain.cpp
+  tests/unit/test_pricing_strike.cpp
+  tests/unit/test_income_chain.cpp
+  tests/unit/test_option_book.cpp
   tests/unit/test_forecast.cpp
   tests/unit/test_game_sim.cpp
 )
@@ -98,7 +111,9 @@ target_link_libraries(monopoly_tests PRIVATE monopoly_core GTest::gtest_main)
 target_compile_definitions(monopoly_tests PRIVATE
   BOARD_JSON_PATH="${CMAKE_SOURCE_DIR}/data/board.london.json"
   DECKS_JSON_PATH="${CMAKE_SOURCE_DIR}/data/decks.london.json"
-  RULES_JSON_PATH="${CMAKE_SOURCE_DIR}/data/rules.default.json")
+  RULES_JSON_PATH="${CMAKE_SOURCE_DIR}/data/rules.default.json"
+  US_BOARD_JSON_PATH="${CMAKE_SOURCE_DIR}/data/board.us.json"
+  US_RULES_JSON_PATH="${CMAKE_SOURCE_DIR}/data/rules.us.json")
 
 include(GoogleTest)
 gtest_discover_tests(monopoly_tests)

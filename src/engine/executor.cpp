@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <string>
+#include "contracts/option_book.h"
 #include "domain/square.h"
 #include "engine/amount.h"
 #include "engine/help.h"
@@ -15,7 +16,8 @@ using domain::SquareType;
 
 Executor::Executor(domain::GameState& gs, const domain::Decks& decks,
                    rules::RuleConfig& rules, const Palette& pal)
-    : gs_(gs), rules_(rules), pal_(pal), query_(gs, decks, rules, pal) {}
+    : gs_(gs), rules_(rules), pal_(pal), query_(gs, decks, rules, pal),
+      resolver_(gs.board(), decks) {}
 
 void Executor::snapshot() {
   history_.push_back(gs_);
@@ -51,6 +53,8 @@ void Executor::resolveLanding(int player, int pos, int arrivalSum, CommandResult
       long rent = risk::rentOwed(gs_, pos, player, arrivalSum);
       gs_.player(player).cash -= rent;
       gs_.player(owner).cash += rent;
+      lastRentPaid_ = rent;  // captured for single-roll option maturity
+      lastRentOwner_ = owner;  // who received it (income accumulation)
       r.add(EffectKind::RentPaid, P + " pays rent " +
                                       formatMoney(static_cast<double>(rent)) + " to P" +
                                       std::to_string(owner + 1));
@@ -127,20 +131,37 @@ CommandResult Executor::execute(const Command& c) {
       break;
   }
 
+  // Turn-aware income maturity: when the owner is genuinely about to roll again, their
+  // open income options close their round window and mature. Done BEFORE snapshot so the
+  // gate's rollback below preserves the maturation (the gate then blocks this roll).
+  if (c.kind == CommandKind::Roll && c.player == nextRoller_)
+    contracts::matureIncomeOnOwnerTurn(gs_, c.player);
+
   snapshot();  // mutating commands from here
+
+  // No-forget settlement gate: a matured contract must be settled before any other
+  // mutating command. (settle/undo/save/load/log/query are routed before snapshot.)
+  if (c.kind != CommandKind::Settle && contracts::hasMatured(gs_)) {
+    gs_ = history_.back(); history_.pop_back();  // undo the snapshot we just took
+    r.fail("settlement required before continuing — settle " +
+           contracts::firstMaturedSummary(gs_) + "  (or: settle all)");
+    r.prompt("settle all");
+    return r;
+  }
 
   switch (c.kind) {
     case CommandKind::Init: {
       for (int i = 0; i < c.count; ++i)
-        gs_.addPlayer("P" + std::to_string(gs_.numPlayers() + 1), kStartingCash);
+        gs_.addPlayer("P" + std::to_string(gs_.numPlayers() + 1), rules_.startingCash);
       r.add(EffectKind::Info, "started game with " + std::to_string(c.count) +
-                                  " players, each " + formatMoney(kStartingCash));
+                                  " players, each " + formatMoney(rules_.startingCash));
       lastMover_ = 0;
       nextRoller_ = 0;  // P1 rolls first
       break;
     }
     case CommandKind::Roll: {
       if (!validPlayer(c.player, r)) break;
+      lastRentPaid_ = 0; lastRentOwner_ = -1;  // reset; resolveLanding sets if rent paid
       if (c.player != nextRoller_) {
         r.fail("out of turn — it is P" + std::to_string(nextRoller_ + 1) +
                "'s roll (use that, or 'cash'/'jail' to correct state)");
@@ -219,6 +240,10 @@ CommandResult Executor::execute(const Command& c) {
     }
     case CommandKind::Buy: {
       if (!validPlayer(c.player, r)) break;
+      if (!domain::isPurchasable(gs_.board().at(c.posA).type)) {
+        r.fail(gs_.board().at(c.posA).name + " is not a purchasable property");
+        break;
+      }
       if (gs_.ownerOf(c.posA) != domain::kUnowned) { r.fail("already owned"); break; }
       long price = c.hasAmount ? c.amount : gs_.board().at(c.posA).price;
       gs_.player(c.player).cash -= price;
@@ -256,9 +281,35 @@ CommandResult Executor::execute(const Command& c) {
       if (!validPlayer(c.player, r)) break;
       const auto& sq = gs_.board().at(c.posA);
       if (sq.type != SquareType::Street) { r.fail("can only build on streets"); break; }
+      if (gs_.ownerOf(c.posA) != c.player) {
+        r.fail("P" + std::to_string(c.player + 1) + " does not own " + sq.name); break;
+      }
+      if (!gs_.ownsWholeGroup(c.player, sq.group)) {
+        r.fail("must own the whole color group to build on " + sq.name); break;
+      }
+      if (c.sign) {  // building up: no property in the group may be mortgaged
+        bool mortgaged = false;
+        for (int p : gs_.board().positionsInGroup(sq.group))
+          if (gs_.isMortgaged(p)) { mortgaged = true; break; }
+        if (mortgaged) {
+          r.fail("cannot build while a property in the group is mortgaged"); break;
+        }
+      }
       int h = gs_.housesOn(c.posA);
       int nh = c.sign ? h + c.count : h - c.count;
       if (nh < 0 || nh > 5) { r.fail("house count out of range (0..5)"); break; }
+      // Even-build (configurable house rule): houses across the group stay within 1.
+      if (rules_.evenBuild) {
+        int mn = nh, mx = nh;
+        for (int p : gs_.board().positionsInGroup(sq.group)) {
+          const int hp = (p == c.posA) ? nh : gs_.housesOn(p);
+          mn = std::min(mn, hp);
+          mx = std::max(mx, hp);
+        }
+        if (mx - mn > 1) {
+          r.fail("even-build rule: develop this group evenly (within 1 house)"); break;
+        }
+      }
       const int delta = nh - h;
       if (delta > 0 && rules_.freeParkingPotEnabled && gs_.bank().housesAvailable < delta) {
         r.fail("bank is out of houses");
@@ -278,7 +329,24 @@ CommandResult Executor::execute(const Command& c) {
     case CommandKind::Mortgage:
     case CommandKind::Unmortgage: {
       if (!validPlayer(c.player, r)) break;
+      const auto& msq = gs_.board().at(c.posA);
+      if (!domain::isPurchasable(msq.type)) {
+        r.fail(msq.name + " cannot be mortgaged"); break;
+      }
+      if (gs_.ownerOf(c.posA) != c.player) {
+        r.fail("P" + std::to_string(c.player + 1) + " does not own " + msq.name); break;
+      }
       const bool m = (c.kind == CommandKind::Mortgage);
+      if (m && gs_.isMortgaged(c.posA)) { r.fail(msq.name + " is already mortgaged"); break; }
+      if (!m && !gs_.isMortgaged(c.posA)) { r.fail(msq.name + " is not mortgaged"); break; }
+      if (m) {  // must sell all buildings in the group before mortgaging
+        bool hasHouses = false;
+        for (int p : gs_.board().positionsInGroup(msq.group))
+          if (gs_.housesOn(p) > 0) { hasHouses = true; break; }
+        if (hasHouses) {
+          r.fail("sell all houses in the " + msq.name + " group before mortgaging"); break;
+        }
+      }
       gs_.setMortgaged(c.posA, m);
       long mv = gs_.board().at(c.posA).mortgage;
       gs_.player(c.player).cash += m ? mv : -mv;
@@ -361,7 +429,7 @@ CommandResult Executor::execute(const Command& c) {
                         std::to_string(pot) + " houses: placed " +
                         std::to_string(cr.placed) + " on monopolies";
       if (cr.cashed > 0) {
-        long cash = static_cast<long>(cr.cashed) * kFreeParkingHouseCash;
+        long cash = static_cast<long>(cr.cashed) * rules_.freeParkingHouseCash;
         gs_.player(c.player).cash += cash;
         msg += ", " + std::to_string(cr.cashed) + " -> cash " +
                formatMoney(static_cast<double>(cash));
@@ -437,12 +505,58 @@ CommandResult Executor::execute(const Command& c) {
                 formatMoney(c.amountB));
       break;
     }
+    case CommandKind::Insure: {
+      if (!validPlayer(c.player, r)) break;
+      int insured = (c.insured >= 0) ? c.insured : c.player;
+      if (!validPlayer(insured, r)) break;
+      const auto type = c.isPut ? domain::OptionType::Put : domain::OptionType::Call;
+      auto res = c.isIncome
+                     ? contracts::openIncomeBank(gs_, c.player, insured, type, c.strike,
+                                                 c.landers, resolver_)
+                     : contracts::openBank(gs_, c.player, insured, type, c.strike,
+                                           resolver_);
+      if (!res.ok) { r.fail(res.error); break; }
+      r.add(EffectKind::Info, "P" + std::to_string(c.player + 1) + " bought " +
+            (c.isPut ? "PUT" : "CALL") + (c.isIncome ? " on income(P" : " on P") +
+            std::to_string(insured + 1) + ")" + " (bank) #" +
+            std::to_string(res.contractId) + " strike " + formatMoney(c.strike) +
+            " premium " + formatMoney(res.premium));
+      break;
+    }
+    case CommandKind::Write: {
+      if (!validPlayer(c.player, r) || !validPlayer(c.player2, r)) break;
+      int insured = (c.insured >= 0) ? c.insured : c.player2;
+      if (!validPlayer(insured, r)) break;
+      const auto type = c.isPut ? domain::OptionType::Put : domain::OptionType::Call;
+      auto res = c.isIncome
+                     ? contracts::openIncomePeer(gs_, c.player, c.player2, insured, type,
+                                                 c.strike, c.premium, c.landers, resolver_)
+                     : contracts::openPeer(gs_, c.player, c.player2, insured, type,
+                                           c.strike, c.premium, resolver_);
+      if (!res.ok) { r.fail(res.error); break; }
+      r.add(EffectKind::Info, "P" + std::to_string(c.player + 1) + " wrote " +
+            (c.isPut ? "PUT" : "CALL") + (c.isIncome ? " on income(P" : " to P") +
+            std::to_string(c.isIncome ? insured + 1 : c.player2 + 1) +
+            (c.isIncome ? ")" : "") + " #" + std::to_string(res.contractId) +
+            " premium " + formatMoney(res.premium) + " (fair " +
+            formatMoney(res.fairValue) + ") escrow " + formatMoney(res.escrow));
+      break;
+    }
+    case CommandKind::Settle: {
+      auto res = contracts::settle(gs_, c.contractId, c.settleAll);
+      if (!res.ok) { r.fail(res.error); break; }
+      r.add(EffectKind::CashTransfer, "settled " + std::to_string(res.settledCount) +
+            " contract(s), total payout " + formatMoney(res.totalPayout));
+      break;
+    }
     case CommandKind::Rules: {
       bool* target = nullptr;
       if (c.name == "mugging") target = &rules_.muggingEnabled;
       else if (c.name == "airport") target = &rules_.airportTravelEnabled;
       else if (c.name == "pot" || c.name == "freeparking")
         target = &rules_.freeParkingPotEnabled;
+      else if (c.name == "evenbuild" || c.name == "even")
+        target = &rules_.evenBuild;
       if (!target) { r.fail("unknown rule: " + c.name); break; }
       *target = c.flag;
       r.add(EffectKind::Info, "rule '" + c.name + "' " + (c.flag ? "on" : "off"));
@@ -451,6 +565,19 @@ CommandResult Executor::execute(const Command& c) {
     default:
       r.fail("command not implemented");
       break;
+  }
+  // Income accumulation: the rent this roll paid to an owner feeds open income options
+  // on that owner whose lander set includes the roller.
+  if (r.ok && c.kind == CommandKind::Roll && lastRentPaid_ > 0 && lastRentOwner_ >= 0)
+    contracts::accumulateIncome(gs_, lastRentOwner_, c.player, lastRentPaid_);
+
+  // Mature single-roll liability options on the player who just rolled (any roll
+  // outcome, including a roll that pays no rent or sends to jail -> realizedValue 0).
+  if (r.ok && c.kind == CommandKind::Roll && contracts::hasOpenOn(gs_, c.player)) {
+    contracts::matureOnRoll(gs_, c.player, lastRentPaid_);
+    r.add(EffectKind::Info, "option(s) on P" + std::to_string(c.player + 1) +
+                                " matured — settle before continuing");
+    r.prompt("settle all");
   }
   if (!r.ok && !history_.empty()) {  // roll back a failed mutation
     gs_ = history_.back();

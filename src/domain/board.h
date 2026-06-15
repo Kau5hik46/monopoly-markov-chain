@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <string>
 #include <utility>
 #include <vector>
 #include "domain/square.h"
@@ -29,6 +30,10 @@ class Board {
   const RentRules& rentRules() const { return rentRules_; }
   void setRentRules(const RentRules& r) { rentRules_ = r; }
 
+  // Display currency symbol (UTF-8), e.g. "£" or "$". Defaults to £.
+  const std::string& currency() const { return currency_; }
+  void setCurrency(std::string c) { currency_ = std::move(c); }
+
   // Positions whose type matches t.
   std::vector<int> positionsOfType(SquareType t) const;
   // Positions in a color group (for monopoly checks).
@@ -39,6 +44,7 @@ class Board {
  private:
   std::array<Square, kBoardSize> squares_;
   RentRules rentRules_;
+  std::string currency_ = "\xC2\xA3";  // £ by default
 };
 
 }  // namespace monopoly::domain

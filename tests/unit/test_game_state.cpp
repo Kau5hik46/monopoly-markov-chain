@@ -41,3 +41,25 @@ TEST(GameState, Occupancy) {
   EXPECT_EQ(gs.occupantAt(10), kUnowned);
   (void)p0;
 }
+
+TEST(GameStateContracts, StoresAndIdsContracts) {
+  auto board = loadBoardFromFile(BOARD_JSON_PATH);
+  GameState gs(board);
+  gs.addPlayer("P1", 1000);
+  gs.addPlayer("P2", 1000);
+
+  OptionContract c;
+  c.id = gs.nextContractId();
+  c.writer = 1; c.holder = 0; c.insured = 0; c.strike = 0; c.premium = 100;
+  gs.addContract(c);
+
+  ASSERT_EQ(gs.contracts().size(), 1u);
+  EXPECT_EQ(gs.contracts()[0].id, 1);
+  EXPECT_EQ(gs.nextContractId(), 2);  // monotonic
+
+  LedgerEntry le;
+  le.id = 1; le.writer = 1; le.holder = 0; le.insured = 0;
+  le.strike = 0; le.premium = 100; le.escrow = 0; le.payout = 50;
+  gs.ledger().push_back(le);
+  EXPECT_EQ(gs.ledger().size(), 1u);
+}

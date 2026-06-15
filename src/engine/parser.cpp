@@ -231,6 +231,71 @@ Command parseLine(const std::string& line, const NameTable& names) {
     if (!a) return invalid("cash: bad amount");
     c.kind = CommandKind::Cash; c.amount = *a; c.hasAmount = true; return c;
   }
+  auto peekIsPlayer = [&]() {
+    return !cur.done() && (cur.peek()[0] == 'P' || cur.peek()[0] == 'p');
+  };
+  if (verb == "insure") {
+    if (!needPlayer(c.player)) return invalid("insure expects a holder");
+    if (cur.eat("put")) c.isPut = true; else cur.eat("call");  // default call
+    if (cur.eat("income")) {
+      c.isIncome = true;
+      if (!needPlayer(c.insured)) return invalid("insure income expects an owner player");
+    } else {
+      c.insured = c.player;  // default: self-hedge
+      if (peekIsPlayer()) {
+        int ins; if (!needPlayer(ins)) return invalid("insure: bad insured player");
+        c.insured = ins;
+      }
+    }
+    if (cur.eat("strike")) {
+      auto k = cur.done() ? std::nullopt : parseAmount(cur.take());
+      if (!k) return invalid("insure: bad strike");
+      c.strike = *k; c.hasStrike = true;
+    }
+    c.kind = CommandKind::Insure; return c;
+  }
+  if (verb == "write") {
+    if (!needPlayer(c.player)) return invalid("write expects a writer");
+    if (!cur.eat("->")) return invalid("write expects '->'");
+    if (!needPlayer(c.player2)) return invalid("write expects a holder");
+    if (cur.eat("put")) c.isPut = true; else cur.eat("call");  // default call
+    if (cur.eat("income")) {
+      c.isIncome = true;
+      if (!needPlayer(c.insured)) return invalid("write income expects an owner player");
+    } else {
+      c.insured = c.player2;  // default: holder is the insured
+      if (peekIsPlayer()) {
+        int ins; if (!needPlayer(ins)) return invalid("write: bad insured player");
+        c.insured = ins;
+      }
+    }
+    if (cur.eat("strike")) {
+      auto k = cur.done() ? std::nullopt : parseAmount(cur.take());
+      if (!k) return invalid("write: bad strike");
+      c.strike = *k; c.hasStrike = true;
+    }
+    if (!cur.eat("premium")) return invalid("write expects 'premium <amount>'");
+    auto p = cur.done() ? std::nullopt : parseAmount(cur.take());
+    if (!p) return invalid("write: bad premium");
+    c.premium = *p; c.hasPremium = true;
+    if (cur.eat("landers")) {  // income: explicit lander subset
+      while (peekIsPlayer()) {
+        int l; if (!needPlayer(l)) return invalid("write: bad lander");
+        c.landers.push_back(l);
+      }
+    }
+    c.kind = CommandKind::Write; return c;
+  }
+  if (verb == "settle") {
+    if (cur.eat("all")) { c.settleAll = true; c.kind = CommandKind::Settle; return c; }
+    auto id = cur.done() ? std::nullopt : parseInt(cur.take());
+    if (!id) return invalid("settle expects an id or 'all'");
+    c.contractId = *id; c.kind = CommandKind::Settle; return c;
+  }
+  if (verb == "log") {
+    if (!cur.done()) { auto n = parseInt(cur.take()); c.count = n ? *n : 0; }
+    c.kind = CommandKind::Log; return c;
+  }
   if (verb == "query") {
     if (cur.done()) return invalid("query expects a subcommand");
     std::string sub = cur.take();
@@ -264,6 +329,7 @@ Command parseLine(const std::string& line, const NameTable& names) {
       return c;
     }
     if (sub == "value") { c.query = QueryKind::Value; if (!needSquare(c.posA)) return invalid("query value expects @square"); return c; }
+    if (sub == "ledger") { c.query = QueryKind::Ledger; return c; }
     if (sub == "state") { c.query = QueryKind::State; return c; }
     return invalid("unknown query: " + sub);
   }

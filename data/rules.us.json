@@ -1,0 +1,18 @@
+{
+  "_note": "US-edition economy in literal dollars (1:1). Matches the board.us.json scale so Mediterranean Avenue is $60, salary $200, etc.",
+  "muggingEnabled": true,
+  "muggingAmount": 500,
+  "hospitalPosition": 20,
+  "airportTravelEnabled": true,
+  "freeParkingPotEnabled": true,
+  "housesPerIncomeTax": 2,
+  "housesPerSuperTax": 1,
+  "respectHouseSupply": true,
+  "evenBuild": true,
+  "jailMaxAttempts": 3,
+  "jailFine": 50,
+  "passGoBonus": 200,
+  "landOnGoDoubles": true,
+  "startingCash": 1500,
+  "freeParkingHouseCash": 100
+}

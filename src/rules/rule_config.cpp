@@ -27,10 +27,14 @@ RuleConfig loadRuleConfig(const std::string& path) {
     c.housesPerSuperTax = j["housesPerSuperTax"].get<int>();
   if (j.contains("respectHouseSupply"))
     c.respectHouseSupply = j["respectHouseSupply"].get<bool>();
+  if (j.contains("evenBuild")) c.evenBuild = j["evenBuild"].get<bool>();
   if (j.contains("jailMaxAttempts")) c.jailMaxAttempts = j["jailMaxAttempts"].get<int>();
   if (j.contains("jailFine")) c.jailFine = j["jailFine"].get<long>();
   if (j.contains("passGoBonus")) c.passGoBonus = j["passGoBonus"].get<long>();
   if (j.contains("landOnGoDoubles")) c.landOnGoDoubles = j["landOnGoDoubles"].get<bool>();
+  if (j.contains("startingCash")) c.startingCash = j["startingCash"].get<long>();
+  if (j.contains("freeParkingHouseCash"))
+    c.freeParkingHouseCash = j["freeParkingHouseCash"].get<long>();
   return c;
 }
 

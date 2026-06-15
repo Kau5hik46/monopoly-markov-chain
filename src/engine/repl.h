@@ -1,6 +1,8 @@
 #pragma once
 #include <istream>
 #include <ostream>
+#include <string>
+#include <vector>
 #include "domain/board.h"
 #include "domain/deck_factory.h"
 #include "domain/game_state.h"
@@ -12,8 +14,10 @@
 namespace monopoly::engine {
 
 // Interactive setup asked at game start: prompts yes/no for each house rule and
-// returns the chosen RuleConfig. On EOF/empty answers, keeps defaults.
-rules::RuleConfig runRulesWizard(std::istream& in, std::ostream& out);
+// returns the chosen RuleConfig. Numeric economy (cash/bonuses/scale) is seeded from
+// `base` (board-dependent units); only the booleans are toggled. EOF keeps base values.
+rules::RuleConfig runRulesWizard(std::istream& in, std::ostream& out,
+                                 rules::RuleConfig base = {});
 
 // The read-eval-print loop. After every command it prints the echoed command, the
 // causal effect log, the full state panel, and the next roller's advisory.
@@ -29,6 +33,12 @@ class Repl {
   void render(const std::string& line, const CommandResult& result,
               CommandKind kind);
 
+  struct JournalEntry {
+    int seq;
+    std::string command;
+    std::vector<std::string> effects;
+  };
+
   const domain::Board& board_;
   rules::RuleConfig rules_;
   Palette pal_;
@@ -36,6 +46,9 @@ class Repl {
   NameTable names_;
   Executor exec_;
   std::ostream& out_;
+  std::vector<JournalEntry> journal_;
+  int seq_ = 0;
+  std::string logPath_ = "monopoly-session.log";
 };
 
 }  // namespace monopoly::engine

@@ -23,11 +23,22 @@ std::string manPage(const Palette& pal) {
     << "    it, prints the resulting events and the full game state, and shows the next\n"
     << "    player's roll risk plus a fair insurance price for the upcoming roll.\n\n";
 
+  o << sec("FAST INPUT", pal) << "\n"
+    << "    d1,d2  (or 'd1 d2')         roll for the player whose turn it is — e.g. '3,4'\n"
+    << "                                (no need to type 'roll Pi =')\n"
+    << "    <Enter>                     accept the highlighted default in the 'fast:' menu\n"
+    << "    N                           accept fast-menu item N (a lone digit, e.g. '1')\n"
+    << "    @<TAB>                      complete a square name; <TAB> also completes verbs,\n"
+    << "                                players, keywords, and cycles recommended actions\n"
+    << "    Safe actions (roll/settle/claim/skip) run at once; money moves (buy/tax/trade/\n"
+    << "    write/insure) and prompts needing a value pre-fill the line to confirm with Enter.\n"
+    << "    A rejected command is reloaded into the buffer so you can fix it in place.\n\n";
+
   o << sec("SETUP", pal) << "\n"
     << "    init N                      start a game with N players (P1..PN)\n\n";
 
   o << sec("MOVEMENT", pal) << "\n"
-    << "    roll Pi = d1,d2             apply a dice roll (GO bonus, jail, doubles handled)\n"
+    << "    roll Pi = d1,d2             apply a dice roll (or just 'd1,d2' for the current player)\n"
     << "    jail Pi +|-                 send to / release from jail\n"
     << "    airport Pi @FROM -> @TO     travel between two airports you own (skips a turn)\n"
     << "    mug Pi vs Pj = a:b          resolve a mugging contest (Pi's total : Pj's total)\n"
@@ -37,7 +48,8 @@ std::string manPage(const Palette& pal) {
     << "    buy Pi @SQ [= amt]          buy a property (price defaults to face value)\n"
     << "    sell Pi -> Pj @SQ [= amt]   transfer a property for cash\n"
     << "    rent Pi -> Pj @SQ [= amt]   pay rent (auto-computed if amount omitted)\n"
-    << "    build Pi @SQ +|- n          add / remove n houses (5 = hotel)\n"
+    << "    build Pi @SQ +|- n          add / remove n houses (5 = hotel); requires owning\n"
+    << "                                the whole colour group, and even-build by default\n"
     << "    mortgage|unmortgage Pi @SQ  toggle a mortgage\n"
     << "    trade Pi <-> Pj : @A 1M <-> @B   swap property+cash bundles between players\n\n";
 
@@ -55,14 +67,27 @@ std::string manPage(const Palette& pal) {
     << "    query simulate ^N           coupled Monte-Carlo: all players, N rounds (ruin/cash)\n"
     << "    query dist Pi ^n            landing distribution n rolls ahead\n"
     << "    query stationary            long-run landing probabilities\n"
-    << "    query value @SQ             long-run landing probability for one square\n\n";
+    << "    query value @SQ             long-run landing probability for one square\n"
+    << "    query ledger                option premiums, escrow, payouts, net P&L\n\n";
+
+  o << sec("OPTIONS", pal) << "\n"
+    << "    insure Pi [call|put] [Pj] [strike K]   buy fair-priced next-roll insurance\n"
+    << "                                from the bank (default call; Pj defaults to Pi)\n"
+    << "    write Pw -> Ph [call|put] [Pj] [strike K] premium P   peer-write an option;\n"
+    << "                                escrow is locked from Pw (no-default guarantee)\n"
+    << "    insure Ph [call|put] income Po [strike K]   bank option on Po's income\n"
+    << "                                (rent Po collects until Po's next turn)\n"
+    << "    write Pw -> Ph [call|put] income Po [strike K] premium P [landers Pa Pb]\n"
+    << "                                peer income option; landers default to all in reach\n"
+    << "    settle <id> | settle all    settle matured option(s) — required before play continues\n\n";
 
   o << sec("RULES", pal) << "\n"
-    << "    rules <mugging|airport|pot> on|off    toggle a house rule mid-game\n\n";
+    << "    rules <mugging|airport|pot|evenbuild> on|off   toggle a house rule mid-game\n\n";
 
   o << sec("CONTROL", pal) << "\n"
     << "    save FILE                   write the game state to FILE (JSON)\n"
     << "    load FILE                   restore a game state from FILE\n"
+    << "    log [N]                     show the session command/effect journal (last N)\n"
     << "    undo                        revert the last command\n"
     << "    help                        show this page\n"
     << "    quit                        exit\n\n";
@@ -71,7 +96,8 @@ std::string manPage(const Palette& pal) {
     << "    init 2\n"
     << "    buy P2 @TRAFALGAR_SQUARE\n"
     << "    build P2 @#24 + 5\n"
-    << "    roll P1 = 3,4\n"
+    << "    3,4                         (P1's turn) shorthand for 'roll P1 = 3,4'\n"
+    << "    1                           accept fast-menu item 1 (e.g. the buy prompt)\n"
     << "    query options P1\n\n";
 
   o << sec("NOTES", pal) << "\n"
