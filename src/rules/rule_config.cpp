@@ -31,6 +31,9 @@ RuleConfig loadRuleConfig(const std::string& path) {
   if (j.contains("jailFine")) c.jailFine = j["jailFine"].get<long>();
   if (j.contains("passGoBonus")) c.passGoBonus = j["passGoBonus"].get<long>();
   if (j.contains("landOnGoDoubles")) c.landOnGoDoubles = j["landOnGoDoubles"].get<bool>();
+  if (j.contains("startingCash")) c.startingCash = j["startingCash"].get<long>();
+  if (j.contains("freeParkingHouseCash"))
+    c.freeParkingHouseCash = j["freeParkingHouseCash"].get<long>();
   return c;
 }
 

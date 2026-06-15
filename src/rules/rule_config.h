@@ -27,6 +27,8 @@ struct RuleConfig {
   // Economy.
   long passGoBonus = 2000000;
   bool landOnGoDoubles = true;  // landing exactly on GO pays the salary twice
+  long startingCash = 15000000;         // dealt to each player at init
+  long freeParkingHouseCash = 1000000;  // cash per unplaceable house on a pot claim
 };
 
 // Fluent builder (Builder pattern).

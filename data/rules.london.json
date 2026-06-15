@@ -1,0 +1,17 @@
+{
+  "_note": "London-edition economy (canonical UK values ×10000). These are the engine's historical defaults.",
+  "muggingEnabled": true,
+  "muggingAmount": 500000,
+  "hospitalPosition": 20,
+  "airportTravelEnabled": true,
+  "freeParkingPotEnabled": true,
+  "housesPerIncomeTax": 2,
+  "housesPerSuperTax": 1,
+  "respectHouseSupply": true,
+  "jailMaxAttempts": 3,
+  "jailFine": 500000,
+  "passGoBonus": 2000000,
+  "landOnGoDoubles": true,
+  "startingCash": 15000000,
+  "freeParkingHouseCash": 1000000
+}

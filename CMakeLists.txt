@@ -109,7 +109,9 @@ target_link_libraries(monopoly_tests PRIVATE monopoly_core GTest::gtest_main)
 target_compile_definitions(monopoly_tests PRIVATE
   BOARD_JSON_PATH="${CMAKE_SOURCE_DIR}/data/board.london.json"
   DECKS_JSON_PATH="${CMAKE_SOURCE_DIR}/data/decks.london.json"
-  RULES_JSON_PATH="${CMAKE_SOURCE_DIR}/data/rules.default.json")
+  RULES_JSON_PATH="${CMAKE_SOURCE_DIR}/data/rules.default.json"
+  US_BOARD_JSON_PATH="${CMAKE_SOURCE_DIR}/data/board.us.json"
+  US_RULES_JSON_PATH="${CMAKE_SOURCE_DIR}/data/rules.us.json")
 
 include(GoogleTest)
 gtest_discover_tests(monopoly_tests)

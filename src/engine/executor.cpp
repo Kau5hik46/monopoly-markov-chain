@@ -152,9 +152,9 @@ CommandResult Executor::execute(const Command& c) {
   switch (c.kind) {
     case CommandKind::Init: {
       for (int i = 0; i < c.count; ++i)
-        gs_.addPlayer("P" + std::to_string(gs_.numPlayers() + 1), kStartingCash);
+        gs_.addPlayer("P" + std::to_string(gs_.numPlayers() + 1), rules_.startingCash);
       r.add(EffectKind::Info, "started game with " + std::to_string(c.count) +
-                                  " players, each " + formatMoney(kStartingCash));
+                                  " players, each " + formatMoney(rules_.startingCash));
       lastMover_ = 0;
       nextRoller_ = 0;  // P1 rolls first
       break;
@@ -382,7 +382,7 @@ CommandResult Executor::execute(const Command& c) {
                         std::to_string(pot) + " houses: placed " +
                         std::to_string(cr.placed) + " on monopolies";
       if (cr.cashed > 0) {
-        long cash = static_cast<long>(cr.cashed) * kFreeParkingHouseCash;
+        long cash = static_cast<long>(cr.cashed) * rules_.freeParkingHouseCash;
         gs_.player(c.player).cash += cash;
         msg += ", " + std::to_string(cr.cashed) + " -> cash " +
                formatMoney(static_cast<double>(cash));

@@ -24,9 +24,10 @@ bool askYesNo(std::istream& in, std::ostream& out, const std::string& prompt,
 }
 }  // namespace
 
-rules::RuleConfig runRulesWizard(std::istream& in, std::ostream& out) {
+rules::RuleConfig runRulesWizard(std::istream& in, std::ostream& out,
+                                 rules::RuleConfig base) {
   out << "=== House rules setup ===\n";
-  rules::RuleConfig c;
+  rules::RuleConfig c = base;  // keep board-dependent economy; toggle only the booleans
   c.muggingEnabled = askYesNo(in, out, "Enable mugging?", true);
   c.airportTravelEnabled = askYesNo(in, out, "Enable airport travel?", true);
   c.freeParkingPotEnabled = askYesNo(in, out, "Enable free-parking house pot?", true);
