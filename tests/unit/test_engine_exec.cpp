@@ -211,3 +211,26 @@ TEST(Executor, EvenBuildRuleEnforcedAndConfigurable) {
   ASSERT_TRUE(h.run("rules evenbuild off").ok);
   EXPECT_TRUE(h.run("build P1 @#1 + 1").ok);     // even-build off -> {2,0} allowed
 }
+
+TEST(Executor, CannotBuildWhenGroupPropertyMortgaged) {
+  Harness h;
+  h.run("init 2");
+  ASSERT_TRUE(h.run("buy P1 @#1").ok);
+  ASSERT_TRUE(h.run("buy P1 @#3").ok);          // BROWN monopoly, no houses
+  ASSERT_TRUE(h.run("mortgage P1 @#3").ok);     // mortgage one member
+  EXPECT_FALSE(h.run("build P1 @#1 + 1").ok);   // can't build while #3 is mortgaged
+  ASSERT_TRUE(h.run("unmortgage P1 @#3").ok);
+  EXPECT_TRUE(h.run("build P1 @#1 + 1").ok);    // now allowed
+}
+
+TEST(Executor, CannotMortgageWithHousesInGroup) {
+  Harness h;
+  h.run("init 2");
+  ASSERT_TRUE(h.run("buy P1 @#1").ok);
+  ASSERT_TRUE(h.run("buy P1 @#3").ok);
+  ASSERT_TRUE(h.run("build P1 @#1 + 1").ok);    // group now has a house
+  EXPECT_FALSE(h.run("mortgage P1 @#3").ok);    // must sell all group houses first
+  EXPECT_FALSE(h.run("mortgage P1 @#1").ok);
+  ASSERT_TRUE(h.run("build P1 @#1 - 1").ok);    // sell back to 0
+  EXPECT_TRUE(h.run("mortgage P1 @#1").ok);     // now allowed
+}

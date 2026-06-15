@@ -287,6 +287,14 @@ CommandResult Executor::execute(const Command& c) {
       if (!gs_.ownsWholeGroup(c.player, sq.group)) {
         r.fail("must own the whole color group to build on " + sq.name); break;
       }
+      if (c.sign) {  // building up: no property in the group may be mortgaged
+        bool mortgaged = false;
+        for (int p : gs_.board().positionsInGroup(sq.group))
+          if (gs_.isMortgaged(p)) { mortgaged = true; break; }
+        if (mortgaged) {
+          r.fail("cannot build while a property in the group is mortgaged"); break;
+        }
+      }
       int h = gs_.housesOn(c.posA);
       int nh = c.sign ? h + c.count : h - c.count;
       if (nh < 0 || nh > 5) { r.fail("house count out of range (0..5)"); break; }
@@ -331,6 +339,14 @@ CommandResult Executor::execute(const Command& c) {
       const bool m = (c.kind == CommandKind::Mortgage);
       if (m && gs_.isMortgaged(c.posA)) { r.fail(msq.name + " is already mortgaged"); break; }
       if (!m && !gs_.isMortgaged(c.posA)) { r.fail(msq.name + " is not mortgaged"); break; }
+      if (m) {  // must sell all buildings in the group before mortgaging
+        bool hasHouses = false;
+        for (int p : gs_.board().positionsInGroup(msq.group))
+          if (gs_.housesOn(p) > 0) { hasHouses = true; break; }
+        if (hasHouses) {
+          r.fail("sell all houses in the " + msq.name + " group before mortgaging"); break;
+        }
+      }
       gs_.setMortgaged(c.posA, m);
       long mv = gs_.board().at(c.posA).mortgage;
       gs_.player(c.player).cash += m ? mv : -mv;
