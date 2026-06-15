@@ -33,7 +33,8 @@ void applyCompletion(const CompletionResult& cr, std::string& buf, std::ostream&
 }  // namespace
 
 bool readInteractiveLine(const CompletionModel& model, const std::string& prompt,
-                         std::string& out, std::ostream& term) {
+                         std::string& out, std::ostream& term,
+                         const std::string& initial) {
   termios oldt;
   if (tcgetattr(STDIN_FILENO, &oldt) != 0) return false;  // not a tty
   termios raw = oldt;
@@ -42,7 +43,7 @@ bool readInteractiveLine(const CompletionModel& model, const std::string& prompt
   raw.c_cc[VTIME] = 0;
   tcsetattr(STDIN_FILENO, TCSANOW, &raw);
 
-  std::string buf;
+  std::string buf = initial;  // pre-filled command (accept-to-confirm / error recovery)
   int tabCycles = 0;  // running TAB count for empty-line recommended-action cycling
   redraw(term, prompt, buf);
   bool eof = false;
